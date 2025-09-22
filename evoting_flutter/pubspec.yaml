@@ -1,0 +1,50 @@
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 🔹 Biometric / Fingerprint
+  local_auth: ^2.3.0
+
+  # 🔹 UI & Icons
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+  # 🔹 Networking & API
+  http: ^1.1.0
+  dio: ^5.7.0
+
+  # 🔹 State Management
+  provider: ^6.1.1
+
+  # 🔹 Local Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+
+  # 🔹 Chart & Data Visualization (pakai fl_chart modern)
+  fl_chart: ^0.69.0
+
+  # 🔹 Utils
+  intl: ^0.20.2
+  json_annotation: ^4.9.0
+
+  # 🔹 Image Picker (📸 ambil foto dari kamera/galeri)
+  image_picker: ^1.1.2   # versi terbaru stable
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.4.9
+  json_serializable: ^6.9.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - a

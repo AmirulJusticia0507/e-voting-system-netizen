@@ -1,0 +1,26 @@
+# Django core
+django==5.1.1
+djangorestframework==3.15.2
+django-filter==24.3
+
+# Database
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+
+# Auth & Security
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+
+# WebSocket / Real-time
+channels==4.1.0
+daphne==4.1.2
+channels-redis==4.2.0
+
+# OTP / SMS
+twilio==9.2.3
+
+# Dev & Testing
+pytest==8.3.3
+pytest-django==4.8.0
+django-extensions==3.2.3
+Pillow
