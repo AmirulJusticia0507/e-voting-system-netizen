@@ -1,10 +1,26 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart'; // kIsWeb
+import 'dart:io' show Platform;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  final String baseUrl = "http://10.0.2.2:8000/api"; // Android Emulator
-  final storage = const FlutterSecureStorage();
+  final FlutterSecureStorage storage = const FlutterSecureStorage();
+
+  late final String baseUrl;
+
+  ApiService() {
+    if (kIsWeb) {
+      // Untuk Flutter Web
+      baseUrl = "http://localhost:8000/api";
+    } else if (Platform.isAndroid) {
+      // Untuk Android Emulator
+      baseUrl = "http://10.0.2.2:8000/api";
+    } else {
+      // Untuk iOS Simulator / device
+      baseUrl = "http://localhost:8000/api";
+    }
+  }
 
   Future<String?> getToken() async {
     return await storage.read(key: "token");
@@ -24,7 +40,7 @@ class ApiService {
       Uri.parse("$baseUrl/$endpoint"),
       headers: {
         "Content-Type": "application/json",
-        if (token != null) "Authorization": "Bearer $token"
+        if (token != null) "Authorization": "Bearer $token",
       },
       body: jsonEncode(data),
     );
@@ -36,7 +52,7 @@ class ApiService {
       Uri.parse("$baseUrl/$endpoint"),
       headers: {
         "Content-Type": "application/json",
-        if (token != null) "Authorization": "Bearer $token"
+        if (token != null) "Authorization": "Bearer $token",
       },
     );
   }

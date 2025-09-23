@@ -74,6 +74,7 @@ REST_FRAMEWORK = {
     ),
 }
 
+
 ASGI_APPLICATION = "core.asgi.application"
 
 # Channel layer config pakai Redis
