@@ -2,11 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/comment.dart';
-import '../models/topic.dart';
 
 class CommentsPage extends StatefulWidget {
-  final Topic topic;
-  const CommentsPage({super.key, required this.topic});
+  final int topicId;
+  final String topicTitle;
+
+  const CommentsPage({super.key, required this.topicId, required this.topicTitle});
 
   @override
   State<CommentsPage> createState() => _CommentsPageState();
@@ -24,7 +25,7 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 
   void fetchComments() async {
-    final res = await api.get("comments/?topic=${widget.topic.id}");
+    final res = await api.get("comments/?topic=${widget.topicId}");
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body) as List;
       setState(() {
@@ -38,7 +39,7 @@ class _CommentsPageState extends State<CommentsPage> {
 
     final res = await api.post("comments/", {
       "user": 1, // 🔹 sementara hardcoded
-      "topic": widget.topic.id,
+      "topic": widget.topicId,
       "text": _controller.text,
     });
 
@@ -55,7 +56,7 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Komentar: ${widget.topic.title}")),
+      appBar: AppBar(title: Text("Komentar: ${widget.topicTitle}")),
       body: Column(
         children: [
           Expanded(

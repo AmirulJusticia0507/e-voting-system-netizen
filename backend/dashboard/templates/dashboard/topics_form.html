@@ -1,0 +1,20 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="mb-3">
+    <h2>{% if action == 'create' %}Tambah Topic{% else %}Update Topic{% endif %}</h2>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" name="title" id="title" class="form-control" value="{{ topic.title|default_if_none:'' }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea name="description" id="description" class="form-control">{{ topic.description|default_if_none:'' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">{% if action == 'create' %}Create{% else %}Update{% endif %}</button>
+    <a href="{% url 'topics_dashboard' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

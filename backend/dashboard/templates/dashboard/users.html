@@ -1,0 +1,158 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h2>Users</h2>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#userModal" id="addUserBtn">
+        Tambah User
+    </button>
+</div>
+
+<div class="table-wrapper">
+<table class="table table-striped" id="usersTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Phone Number</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr data-id="{{ user.id }}">
+            <td>{{ user.id }}</td>
+            <td class="phone_number">{{ user.phone_number }}</td>
+            <td>
+                <button class="btn btn-sm btn-primary editUserBtn" data-id="{{ user.id }}">Edit</button>
+                <button class="btn btn-sm btn-danger deleteUserBtn" data-id="{{ user.id }}">Delete</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+<!-- Modal Create/Edit User -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="userForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Tambah User</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="userId">
+          <div class="mb-3">
+            <label for="phoneNumber" class="form-label">Phone Number</label>
+            <input type="text" class="form-control" id="phoneNumber" required>
+          </div>
+          <div class="mb-3" id="passwordDiv">
+            <label for="password" class="form-label">Password</label>
+            <input type="text" class="form-control" id="password" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-success" id="saveUserBtn">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // DataTable
+    $('#usersTable').DataTable();
+
+    // Add User
+    $('#addUserBtn').click(function(){
+        $('#modalTitle').text('Tambah User');
+        $('#userId').val('');
+        $('#phoneNumber').val('');
+        $('#passwordDiv').show();
+        $('#password').val('');
+        $('#userModal').modal('show');
+    });
+
+    // Edit User
+    $('.editUserBtn').click(function(){
+        const id = $(this).data('id');
+        const row = $('tr[data-id="'+id+'"]');
+        const phone = row.find('.phone_number').text();
+        
+        $('#modalTitle').text('Edit User');
+        $('#userId').val(id);
+        $('#phoneNumber').val(phone);
+        $('#passwordDiv').hide(); // password tidak diubah
+        $('#userModal').modal('show');
+    });
+
+    // Submit Create/Edit
+    $('#userForm').submit(function(e){
+        e.preventDefault();
+        const id = $('#userId').val();
+        const phone_number = $('#phoneNumber').val();
+        const password = $('#password').val();
+        let url = '';
+        let method = '';
+
+        if(id){ // edit
+            url = '/dashboard/users/update/' + id + '/';
+            method = 'POST';
+        } else { // create
+            url = '/dashboard/users/create/';
+            method = 'POST';
+        }
+
+        $.ajax({
+            url: url,
+            method: method,
+            data: { phone_number: phone_number, password: password },
+            success: function(res){
+                Swal.fire('Sukses', res.message, 'success').then(()=>{
+                    location.reload();
+                });
+            },
+            error: function(err){
+                Swal.fire('Error', 'Terjadi kesalahan!', 'error');
+            }
+        });
+    });
+
+    // Delete User
+    $('.deleteUserBtn').click(function(){
+        const id = $(this).data('id');
+        Swal.fire({
+            title: 'Hapus user?',
+            text: "Data tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Hapus'
+        }).then((result) => {
+            if(result.isConfirmed){
+                $.ajax({
+                    url: '/dashboard/users/delete/' + id + '/',
+                    method: 'POST',
+                    data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
+                    success: function(res){
+                        Swal.fire('Terhapus', res.message, 'success').then(()=> location.reload());
+                    },
+                    error: function(err){
+                        Swal.fire('Error', 'Terjadi kesalahan!', 'error');
+                    }
+                });
+            }
+        })
+    });
+});
+</script>
+{% endblock %}

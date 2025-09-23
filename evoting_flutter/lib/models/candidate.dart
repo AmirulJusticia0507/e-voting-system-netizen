@@ -4,6 +4,8 @@ class Candidate {
   final String name;
   final String photo;
   final String bio;
+  final int likes;     // tambahkan
+  final int dislikes;  // tambahkan
 
   Candidate({
     required this.id,
@@ -11,6 +13,8 @@ class Candidate {
     required this.name,
     required this.photo,
     required this.bio,
+    this.likes = 0,
+    this.dislikes = 0,
   });
 
   factory Candidate.fromJson(Map<String, dynamic> json) => Candidate(
@@ -19,5 +23,7 @@ class Candidate {
         name: json["name"],
         photo: json["photo"],
         bio: json["bio"] ?? "",
+        likes: json['likes'] ?? 0,        // parsing dari backend
+        dislikes: json['dislikes'] ?? 0,  // parsing dari backend
       );
 }

@@ -9,3 +9,12 @@ class Candidate(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.topic.title})"
+
+    # 🔹 Helper properties untuk total like/dislike dari komentar
+    @property
+    def total_likes(self):
+        return self.comment_set.aggregate(total=models.Sum("likes"))["total"] or 0
+
+    @property
+    def total_dislikes(self):
+        return self.comment_set.aggregate(total=models.Sum("dislikes"))["total"] or 0

@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<h2>Comments</h2>
+
+<table class="table table-striped" id="commentsTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Topic</th>
+            <th>Text</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for comment in comments %}
+        <tr>
+            <td>{{ comment.id }}</td>
+            <td>{{ comment.user.phone_number }}</td>
+            <td>{{ comment.topic.title }}</td>
+            <td>{{ comment.text|truncatechars:50 }}</td>
+            <td>{{ comment.created_at }}</td>
+            <td>
+                <a href="{% url 'delete_comment' comment.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus comment?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+$(document).ready(function() {
+    $('#commentsTable').DataTable();
+});
+</script>
+{% endblock %}

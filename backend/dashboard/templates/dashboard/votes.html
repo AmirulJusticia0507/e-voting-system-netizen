@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<h2>Votes</h2>
+
+<table class="table table-striped" id="votesTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Topic</th>
+            <th>Candidate</th>
+            <th>Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vote in votes %}
+        <tr>
+            <td>{{ vote.id }}</td>
+            <td>{{ vote.user.phone_number }}</td>
+            <td>{{ vote.topic.title }}</td>
+            <td>{{ vote.candidate.name }}</td>
+            <td>{{ vote.created_at }}</td>
+            <td>
+                <a href="{% url 'delete_vote' vote.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus vote?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+$(document).ready(function() {
+    $('#votesTable').DataTable();
+});
+</script>
+{% endblock %}

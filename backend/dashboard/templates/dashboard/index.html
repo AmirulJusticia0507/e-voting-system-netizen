@@ -3,53 +3,106 @@
 <head>
   <meta charset="UTF-8">
   <title>E-Voting Admin Dashboard</title>
+  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <!-- DataTables -->
+  <link href="https://cdn.datatables.net/1.13.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .card { border-radius: 15px; }
+    .navbar-brand { font-weight: bold; }
+    .sidebar { 
+      position: fixed; 
+      right: -250px; 
+      top: 0; 
+      height: 100%; 
+      width: 250px; 
+      background: #343a40; 
+      color: #fff; 
+      transition: 0.3s; 
+      padding-top: 60px;
+      z-index: 1000;
+    }
+    .sidebar.active { right: 0; }
+    .sidebar a { display: block; padding: 15px 20px; color: #fff; text-decoration: none; }
+    .sidebar a:hover { background: #495057; }
+    .sidebar-toggle { position: fixed; top: 15px; right: 15px; z-index: 1100; }
+    .table-wrapper { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  </style>
 </head>
 <body>
-<div class="container mt-5">
-  <h1 class="mb-4">E-Voting Admin Dashboard</h1>
 
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="#">E-Voting Admin</a>
+    <button class="btn btn-outline-light sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+    <button class="btn btn-outline-light ms-3" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+  </div>
+</nav>
+
+<!-- Sidebar Right -->
+<div class="sidebar" id="sidebar">
+  <a href="/dashboard/users/"> <i class="fas fa-users"></i> Users </a>
+  <a href="/dashboard/netizens/"> <i class="fas fa-user-check"></i> Netizens </a>
+  <a href="/dashboard/topics/"> <i class="fas fa-list"></i> Topics </a>
+  <a href="/dashboard/candidates/"> <i class="fas fa-user-tie"></i> Candidates </a>
+  <a href="/dashboard/votes/"> <i class="fas fa-vote-yea"></i> Votes </a>
+  <a href="/dashboard/comments/"> <i class="fas fa-comments"></i> Comments </a>
+</div>
+
+<!-- Main Container -->
+<div class="container mt-5 pt-5">
+  <h1 class="mb-4">Dashboard</h1>
+
+  <!-- Stat Cards -->
   <div class="row g-4">
     <div class="col-md-3">
-      <div class="card bg-primary text-white text-center">
+      <div class="card bg-primary text-white text-center p-3">
         <div class="card-body">
           <h2>{{ user_count }}</h2>
-          <p>Users</p>
+          <p><i class="fas fa-users"></i> Users</p>
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
-      <div class="card bg-success text-white text-center">
+      <div class="card bg-success text-white text-center p-3">
         <div class="card-body">
           <h2>{{ topic_count }}</h2>
-          <p>Topics</p>
+          <p><i class="fas fa-list"></i> Topics</p>
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
-      <div class="card bg-warning text-dark text-center">
+      <div class="card bg-warning text-dark text-center p-3">
         <div class="card-body">
           <h2>{{ candidate_count }}</h2>
-          <p>Candidates</p>
+          <p><i class="fas fa-user-tie"></i> Candidates</p>
         </div>
       </div>
     </div>
-
     <div class="col-md-3">
-      <div class="card bg-danger text-white text-center">
+      <div class="card bg-danger text-white text-center p-3">
         <div class="card-body">
           <h2>{{ vote_count }}</h2>
-          <p>Votes</p>
+          <p><i class="fas fa-vote-yea"></i> Votes</p>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Chart Section -->
   <div class="mt-5">
+    <h3>Votes per Topic</h3>
+    <canvas id="votesChart" height="100"></canvas>
+  </div>
+
+  <!-- Latest Comments -->
+  <div class="mt-5 table-wrapper">
     <h3>Latest Comments</h3>
-    <table class="table table-striped">
+    <table id="commentsTable" class="table table-striped table-bordered">
       <thead>
         <tr>
           <th>User</th>
@@ -70,7 +123,64 @@
       </tbody>
     </table>
   </div>
-
 </div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  // Sidebar toggle
+  document.getElementById('sidebarToggle').addEventListener('click', function() {
+    document.getElementById('sidebar').classList.toggle('active');
+  });
+
+  // Logout confirmation
+  document.getElementById('logoutBtn').addEventListener('click', function() {
+    Swal.fire({
+      title: 'Logout?',
+      text: "Anda akan keluar dari dashboard!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Logout'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        window.location.href = '/admin/logout/';
+      }
+    })
+  });
+
+  // DataTables init
+  $(document).ready(function() {
+    $('#commentsTable').DataTable();
+  });
+
+  // Chart.js
+  const ctx = document.getElementById('votesChart').getContext('2d');
+  const votesChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: [{% for topic in topics %}'{{ topic.title }}',{% endfor %}],
+      datasets: [{
+        label: 'Votes',
+        data: [{% for topic in topics %}{{ topic.vote_count }},{% endfor %}],
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+</script>
 </body>
 </html>

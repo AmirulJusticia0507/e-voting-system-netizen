@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/topic.dart';
-import 'candidates_page.dart';
 
 class TopicsPage extends StatefulWidget {
   const TopicsPage({super.key});
@@ -43,12 +42,13 @@ class _TopicsPageState extends State<TopicsPage> {
             title: Text(t.title),
             subtitle: Text(t.description),
             trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CandidatesPage(topic: t),
-              ),
-            ),
+            onTap: () {
+              Navigator.pushNamed(
+                context,
+                '/candidates',
+                arguments: {'topicId': t.id, 'topicTitle': t.title},
+              );
+            },
           );
         },
       ),

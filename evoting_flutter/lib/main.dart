@@ -2,11 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+// Pages
 import 'pages/login_page.dart';
+import 'pages/netizen_signup_page.dart';
 import 'pages/home_page.dart';
 import 'pages/voting_page.dart';
+import 'pages/results_page.dart';
+import 'pages/topics_page.dart';
+import 'pages/candidates_page.dart';
+import 'pages/comments_page.dart';
+import 'pages/profile_page.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -23,11 +31,37 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Poppins',
       ),
-      home: const AuthGate(), // 🚀 ganti initialRoute -> pakai AuthGate
+      home: const AuthGate(),
       routes: {
-        '/login': (context) => LoginPage(),
-        '/home': (context) => HomePage(),
+        '/login': (context) => const LoginPage(),
+        '/signup': (context) => const NetizenSignupPage(),
+        '/home': (context) => const HomePage(),
         '/voting': (context) => VotingPage(),
+        '/results': (context) => const ResultsPage(),
+        '/topics': (context) => const TopicsPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/candidates':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => CandidatesPage(
+                topicId: args['topicId'] as int,
+                topicTitle: args['topicTitle'] as String,
+              ),
+            );
+          case '/comments':
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (_) => CommentsPage(
+                topicId: args['topicId'] as int,
+                topicTitle: args['topicTitle'] as String,
+              ),
+            );
+          default:
+            return null;
+        }
       },
     );
   }
@@ -54,11 +88,9 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _checkLogin() async {
-    // cek token di secure storage
     final token = await storage.read(key: "access_token");
 
     if (token != null) {
-      // kalau ada token, coba fingerprint
       try {
         final canCheck = await auth.canCheckBiometrics;
         final isDeviceSupported = await auth.isDeviceSupported();
@@ -84,7 +116,6 @@ class _AuthGateState extends State<AuthGate> {
       }
     }
 
-    // kalau gagal -> arahkan ke login
     setState(() {
       _isAuthenticated = false;
       _loading = false;
@@ -99,6 +130,11 @@ class _AuthGateState extends State<AuthGate> {
       );
     }
 
-    return _isAuthenticated ? HomePage() : LoginPage();
+    if (_isAuthenticated) return const HomePage();
+
+    return LoginPage(
+      onSignupTap: () => Navigator.pushNamed(context, '/signup'),
+      onFingerprintTap: _checkLogin,
+    );
   }
 }

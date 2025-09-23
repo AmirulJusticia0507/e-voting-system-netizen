@@ -1,0 +1,37 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h2>Candidates</h2>
+    <a href="{% url 'create_candidate' %}" class="btn btn-success">Tambah Candidate</a>
+</div>
+
+<table class="table table-striped" id="candidatesTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Topic</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for candidate in candidates %}
+        <tr>
+            <td>{{ candidate.id }}</td>
+            <td>{{ candidate.name }}</td>
+            <td>{{ candidate.topic.title }}</td>
+            <td>
+                <a href="{% url 'update_candidate' candidate.id %}" class="btn btn-sm btn-primary">Edit</a>
+                <a href="{% url 'delete_candidate' candidate.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus candidate?')">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+$(document).ready(function() {
+    $('#candidatesTable').DataTable();
+});
+</script>
+{% endblock %}

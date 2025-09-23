@@ -23,6 +23,7 @@ from users.views import AdminLoginView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/users/", include("users.urls")),
+    path("api/netizens/", include("netizens.urls")),
     path("api/auth/admin-login/", AdminLoginView.as_view()),
     path("api/topics/", include("topics.urls")),
     path("api/candidates/", include("candidates.urls")),

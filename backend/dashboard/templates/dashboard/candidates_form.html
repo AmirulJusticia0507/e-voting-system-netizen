@@ -1,0 +1,25 @@
+{% extends "dashboard/base.html" %}
+{% block content %}
+<div class="mb-3">
+    <h2>{% if action == 'create' %}Tambah Candidate{% else %}Update Candidate{% endif %}</h2>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" name="name" id="name" class="form-control" value="{{ candidate.name|default_if_none:'' }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="topic" class="form-label">Topic</label>
+        <select name="topic" id="topic" class="form-control" required>
+            <option value="">-- Pilih Topic --</option>
+            {% for topic in topics %}
+                <option value="{{ topic.id }}" {% if candidate and candidate.topic.id == topic.id %}selected{% endif %}>{{ topic.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">{% if action == 'create' %}Create{% else %}Update{% endif %}</button>
+    <a href="{% url 'candidates_dashboard' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

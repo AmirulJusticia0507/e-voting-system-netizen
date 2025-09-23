@@ -42,7 +42,7 @@ class CustomButton extends StatelessWidget {
             )
           : Text(
               text,
-              key: ValueKey("text"),
+              key: const ValueKey("text"),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -52,7 +52,6 @@ class CustomButton extends StatelessWidget {
     );
 
     if (useGradient) {
-      // 🔹 Tombol dengan Gradient
       return SizedBox(
         width: width ?? double.infinity,
         height: height ?? 52,
@@ -79,15 +78,13 @@ class CustomButton extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(borderRadius),
               ),
-              padding:
-                  const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
             ),
             child: buttonChild,
           ),
         ),
       );
     } else {
-      // 🔹 Tombol Normal dengan warna solid
       return SizedBox(
         width: width ?? double.infinity,
         height: height ?? 52,
@@ -98,7 +95,7 @@ class CustomButton extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),
-            elevation: 4, // ada shadow
+            elevation: 4,
             padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           ),
           onPressed: isLoading ? null : onPressed,

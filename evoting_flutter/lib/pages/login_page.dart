@@ -2,10 +2,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'home_page.dart';
+import 'netizen_signup_page.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
+  final VoidCallback? onSignupTap;
+  final VoidCallback? onFingerprintTap;
+
+  const LoginPage({this.onSignupTap, this.onFingerprintTap, super.key});
+
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
@@ -14,12 +22,14 @@ class _LoginPageState extends State<LoginPage> {
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
   final api = ApiService();
+  final storage = const FlutterSecureStorage();
+  final auth = LocalAuthentication();
+
   bool isLoading = false;
   bool obscurePassword = true;
-
   final _formKey = GlobalKey<FormState>();
 
-  void login() async {
+  void loginAdmin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
@@ -34,19 +44,57 @@ class _LoginPageState extends State<LoginPage> {
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
       await api.saveToken(data["access"]);
+      await storage.write(key: "access_token", value: data["access"]);
       Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => HomePage()),
-      );
+          context, MaterialPageRoute(builder: (_) => const HomePage()));
     } else {
       String errorMsg = "Login gagal, periksa kembali nomor dan password.";
       try {
         final data = jsonDecode(res.body);
         if (data["detail"] != null) errorMsg = data["detail"];
       } catch (_) {}
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMsg)),
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorMsg)));
+    }
+  }
+
+  void loginWithFingerprint() async {
+    if (widget.onFingerprintTap != null) {
+      widget.onFingerprintTap!();
+      return;
+    }
+
+    try {
+      final canCheck = await auth.canCheckBiometrics;
+      final isDeviceSupported = await auth.isDeviceSupported();
+
+      if (!canCheck || !isDeviceSupported) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text("Perangkat tidak mendukung biometrik")));
+        return;
+      }
+
+      final didAuth = await auth.authenticate(
+        localizedReason: "Gunakan sidik jari untuk masuk",
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
       );
+
+      if (didAuth) {
+        final token = await storage.read(key: "access_token");
+        if (token != null) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const HomePage()));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text(
+                  "Belum pernah login sebelumnya. Gunakan login biasa.")));
+        }
+      }
+    } catch (e) {
+      debugPrint("Biometric error: $e");
     }
   }
 
@@ -87,8 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 40),
                 Card(
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                      borderRadius: BorderRadius.circular(20)),
                   elevation: 10,
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -98,8 +145,8 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           CustomTextField(
                             controller: phoneController,
-                            label: "Nomor HP",
-                            prefixIcon: Icons.phone,
+                            label: "Nomor HP / Username",
+                            prefixIcon: Icons.person,
                             keyboardType: TextInputType.phone,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
@@ -121,11 +168,9 @@ class _LoginPageState extends State<LoginPage> {
                               return null;
                             },
                             suffixIcon: IconButton(
-                              icon: Icon(
-                                obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                              ),
+                              icon: Icon(obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility),
                               onPressed: () {
                                 setState(() {
                                   obscurePassword = !obscurePassword;
@@ -137,7 +182,31 @@ class _LoginPageState extends State<LoginPage> {
                           CustomButton(
                             text: "Login",
                             isLoading: isLoading,
-                            onPressed: login,
+                            onPressed: loginAdmin,
+                          ),
+                          const SizedBox(height: 10),
+                          TextButton(
+                            onPressed: widget.onSignupTap ??
+                                () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const NetizenSignupPage()),
+                                  );
+                                },
+                            child: const Text(
+                              "Signup Netizen",
+                              style: TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          IconButton(
+                            icon: const Icon(Icons.fingerprint,
+                                size: 40, color: Colors.deepPurple),
+                            onPressed: loginWithFingerprint,
                           ),
                         ],
                       ),

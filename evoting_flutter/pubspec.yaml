@@ -1,3 +1,12 @@
+name: evoting_flutter
+description: "E-voting Flutter client for Django backend."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
 dependencies:
   flutter:
     sdk: flutter
@@ -28,7 +37,7 @@ dependencies:
   json_annotation: ^4.9.0
 
   # 🔹 Image Picker (📸 ambil foto dari kamera/galeri)
-  image_picker: ^1.1.2   # versi terbaru stable
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -47,4 +56,6 @@ flutter:
   fonts:
     - family: Poppins
       fonts:
-        - a
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
