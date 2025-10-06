@@ -7,12 +7,12 @@ import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart'; // kIsWeb
 
 class LoginPage extends StatefulWidget {
-  final VoidCallback? onSignupTap;
-  final VoidCallback? onFingerprintTap;
+  final VoidCallback? onSignupTap; // ✅ optional
 
-  const LoginPage({this.onSignupTap, this.onFingerprintTap, super.key});
+  const LoginPage({Key? key, this.onSignupTap}) : super(key: key);
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -29,26 +29,45 @@ class _LoginPageState extends State<LoginPage> {
   bool obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
 
+  /// 🔹 Login via API
   void loginAdmin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => isLoading = true);
 
-    final res = await api.post("token/", {
-      "phone_number": phoneController.text.trim(),
-      "password": passwordController.text.trim(),
-    });
+    final identifier = phoneController.text.trim();
+    final password = passwordController.text.trim();
+
+    final bool isPhone = RegExp(r'^[0-9]+$').hasMatch(identifier);
+
+    final endpoint = isPhone ? "token/" : "auth/admin-login/";
+    final payload = isPhone
+        ? {
+            "phone_number": identifier,
+            "password": password,
+          }
+        : {
+            "username": identifier,
+            "password": password,
+          };
+
+    final res = await api.post(endpoint, payload);
 
     setState(() => isLoading = false);
 
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
-      await api.saveToken(data["access"]);
-      await storage.write(key: "access_token", value: data["access"]);
+      final access = data["access"];
+      await api.saveToken(access);
+      await storage.write(key: "access_token", value: access);
+
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const HomePage()));
+        context,
+        MaterialPageRoute(builder: (_) => const HomePage()),
+      );
     } else {
-      String errorMsg = "Login gagal, periksa kembali nomor dan password.";
+      String errorMsg =
+          "Login gagal, periksa kembali nomor/username dan password.";
       try {
         final data = jsonDecode(res.body);
         if (data["detail"] != null) errorMsg = data["detail"];
@@ -58,9 +77,11 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  /// 🔹 Fingerprint login (Android/iOS only)
   void loginWithFingerprint() async {
-    if (widget.onFingerprintTap != null) {
-      widget.onFingerprintTap!();
+    if (kIsWeb) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Fingerprint tidak tersedia di Web")));
       return;
     }
 
@@ -89,8 +110,8 @@ class _LoginPageState extends State<LoginPage> {
               context, MaterialPageRoute(builder: (_) => const HomePage()));
         } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text(
-                  "Belum pernah login sebelumnya. Gunakan login biasa.")));
+              content:
+                  Text("Belum pernah login sebelumnya. Gunakan login biasa.")));
         }
       }
     } catch (e) {
@@ -147,10 +168,10 @@ class _LoginPageState extends State<LoginPage> {
                             controller: phoneController,
                             label: "Nomor HP / Username",
                             prefixIcon: Icons.person,
-                            keyboardType: TextInputType.phone,
+                            keyboardType: TextInputType.text,
                             validator: (value) {
                               if (value == null || value.isEmpty) {
-                                return "Nomor HP tidak boleh kosong";
+                                return "Nomor HP / Username tidak boleh kosong";
                               }
                               return null;
                             },

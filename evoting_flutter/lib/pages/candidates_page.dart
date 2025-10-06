@@ -1,4 +1,3 @@
-// candidates_page.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -19,6 +18,7 @@ class _CandidatesPageState extends State<CandidatesPage> {
   final api = ApiService();
   List<Candidate> candidates = [];
   bool isLoading = true;
+  bool actionLoading = false;
 
   @override
   void initState() {
@@ -28,57 +28,90 @@ class _CandidatesPageState extends State<CandidatesPage> {
 
   Future<void> fetchCandidates() async {
     setState(() => isLoading = true);
-    final res = await api.get("candidates/?topic=${widget.topicId}");
-    if (res.statusCode == 200) {
-      final data = jsonDecode(res.body) as List;
-      setState(() {
-        candidates = data.map((e) => Candidate.fromJson(e)).toList();
-        isLoading = false;
-      });
-    } else {
-      setState(() => isLoading = false);
+    try {
+      final res = await api.get("candidates/?topic=${widget.topicId}");
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as List;
+        setState(() {
+          candidates = data.map((e) => Candidate.fromJson(e)).toList();
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal ambil kandidat: ${res.body}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal ambil kandidat: ${res.body}")),
+        SnackBar(content: Text("Error: $e")),
       );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
   Future<void> voteCandidate(int candidateId) async {
-    final res = await api.post("votes/", {
-      "user": 1, // 🔹 sementara hardcoded
-      "topic": widget.topicId,
-      "candidate": candidateId,
-    });
+    setState(() => actionLoading = true);
+    try {
+      final res = await api.post("votes/", {
+        "user": 1, // 🔹 sementara hardcoded
+        "topic": widget.topicId,
+        "candidate": candidateId,
+      });
 
-    if (res.statusCode == 201) {
+      if (res.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vote berhasil!")),
+        );
+        fetchCandidates();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal vote: ${res.body}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vote berhasil!")),
+        SnackBar(content: Text("Error vote: $e")),
       );
-      fetchCandidates();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal vote: ${res.body}")),
-      );
+    } finally {
+      setState(() => actionLoading = false);
     }
   }
 
   Future<void> likeCandidate(int candidateId) async {
-    final res = await api.post("candidates/$candidateId/like/", {}); // <--- tambahkan {}
-    if (res.statusCode == 200) {
+    setState(() => actionLoading = true);
+    try {
+      final res = await api.post("candidates/$candidateId/like/", {});
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Liked 👍")),
+        );
+        fetchCandidates();
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Liked 👍")),
+        SnackBar(content: Text("Error like: $e")),
       );
-      fetchCandidates();
+    } finally {
+      setState(() => actionLoading = false);
     }
   }
 
   Future<void> dislikeCandidate(int candidateId) async {
-    final res = await api.post("candidates/$candidateId/dislike/", {}); // <--- tambahkan {}
-    if (res.statusCode == 200) {
+    setState(() => actionLoading = true);
+    try {
+      final res = await api.post("candidates/$candidateId/dislike/", {});
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Disliked 👎")),
+        );
+        fetchCandidates();
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Disliked 👎")),
+        SnackBar(content: Text("Error dislike: $e")),
       );
-      fetchCandidates();
+    } finally {
+      setState(() => actionLoading = false);
     }
   }
 
@@ -97,7 +130,9 @@ class _CandidatesPageState extends State<CandidatesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Kandidat: ${widget.topicTitle}")),
+      appBar: AppBar(
+        title: Text("Kandidat: ${widget.topicTitle}"),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
@@ -105,10 +140,15 @@ class _CandidatesPageState extends State<CandidatesPage> {
               itemBuilder: (context, i) {
                 final c = candidates[i];
                 return Card(
-                  margin: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundImage: NetworkImage(c.photo),
+                      backgroundImage: c.photo != null && c.photo.isNotEmpty
+                          ? NetworkImage(c.photo)
+                          : null,
+                      child: c.photo == null || c.photo.isEmpty
+                          ? const Icon(Icons.person)
+                          : null,
                     ),
                     title: Text(c.name),
                     subtitle: Column(
@@ -116,7 +156,7 @@ class _CandidatesPageState extends State<CandidatesPage> {
                       children: [
                         Text(c.bio),
                         const SizedBox(height: 4),
-                        Text("👍 ${c.likes}  |  👎 ${c.dislikes}"),
+                        Text("👍 ${c.likes}  |  👎 ${c.dislikes}"),
                       ],
                     ),
                     trailing: SizedBox(
@@ -127,15 +167,15 @@ class _CandidatesPageState extends State<CandidatesPage> {
                           IconButton(
                             icon: const Icon(Icons.thumb_up),
                             color: Colors.green,
-                            onPressed: () => likeCandidate(c.id),
+                            onPressed: actionLoading ? null : () => likeCandidate(c.id),
                           ),
                           IconButton(
                             icon: const Icon(Icons.thumb_down),
                             color: Colors.red,
-                            onPressed: () => dislikeCandidate(c.id),
+                            onPressed: actionLoading ? null : () => dislikeCandidate(c.id),
                           ),
                           ElevatedButton(
-                            onPressed: () => voteCandidate(c.id),
+                            onPressed: actionLoading ? null : () => voteCandidate(c.id),
                             child: const Text("Vote"),
                           ),
                           IconButton(

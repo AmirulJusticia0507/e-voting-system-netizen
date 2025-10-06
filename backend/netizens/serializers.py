@@ -1,3 +1,4 @@
+# netizens/serializers.py
 from rest_framework import serializers
 from users.models import User
 from django.contrib.auth.hashers import make_password
@@ -5,10 +6,17 @@ from django.contrib.auth.hashers import make_password
 class NetizenSignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['phone_number', 'password']
+        fields = ['phone_number', 'password', 'photo']  # tambahkan field lain kalau perlu
+        extra_kwargs = {
+            "password": {"write_only": True}
+        }
 
     def create(self, validated_data):
-        # Hash password
+        # hash password
         validated_data['password'] = make_password(validated_data['password'])
-        user = User.objects.create(**validated_data, is_netizen=True)
-        return user
+        # paksa user jadi netizen
+        validated_data['is_netizen'] = True
+        # username fallback → pakai phone_number kalau kosong
+        if not validated_data.get("username"):
+            validated_data["username"] = validated_data["phone_number"]
+        return User.objects.create(**validated_data)

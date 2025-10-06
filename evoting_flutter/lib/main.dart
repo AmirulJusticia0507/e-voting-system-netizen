@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart'; // kIsWeb
 
 // Pages
 import 'pages/login_page.dart';
@@ -12,6 +13,7 @@ import 'pages/topics_page.dart';
 import 'pages/candidates_page.dart';
 import 'pages/comments_page.dart';
 import 'pages/profile_page.dart';
+import 'pages/netizen_menu_page.dart'; // ✅ penting
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +35,10 @@ class MyApp extends StatelessWidget {
       ),
       home: const AuthGate(),
       routes: {
-        '/login': (context) => const LoginPage(),
+        '/login': (context) => LoginPage(
+              onSignupTap: () =>
+                  Navigator.pushNamed(context, '/signup'), // ✅ default
+            ),
         '/signup': (context) => const NetizenSignupPage(),
         '/home': (context) => const HomePage(),
         '/voting': (context) => VotingPage(),
@@ -80,6 +85,7 @@ class _AuthGateState extends State<AuthGate> {
 
   bool _loading = true;
   bool _isAuthenticated = false;
+  String? _role; // <- simpan role: "admin" / "netizen"
 
   @override
   void initState() {
@@ -89,33 +95,46 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _checkLogin() async {
     final token = await storage.read(key: "access_token");
+    final role = await storage.read(key: "user_role"); // ✅ simpan role di storage
 
     if (token != null) {
-      try {
-        final canCheck = await auth.canCheckBiometrics;
-        final isDeviceSupported = await auth.isDeviceSupported();
+      if (!kIsWeb) {
+        try {
+          final canCheck = await auth.canCheckBiometrics;
+          final isDeviceSupported = await auth.isDeviceSupported();
 
-        if (canCheck && isDeviceSupported) {
-          final didAuth = await auth.authenticate(
-            localizedReason: "Gunakan sidik jari untuk masuk",
-            options: const AuthenticationOptions(
-              biometricOnly: true,
-              stickyAuth: true,
-            ),
-          );
-          if (didAuth) {
-            setState(() {
-              _isAuthenticated = true;
-              _loading = false;
-            });
-            return;
+          if (canCheck && isDeviceSupported) {
+            final didAuth = await auth.authenticate(
+              localizedReason: "Gunakan sidik jari untuk masuk",
+              options: const AuthenticationOptions(
+                biometricOnly: true,
+                stickyAuth: true,
+              ),
+            );
+            if (didAuth) {
+              setState(() {
+                _isAuthenticated = true;
+                _role = role;
+                _loading = false;
+              });
+              return;
+            }
           }
+        } catch (e) {
+          debugPrint("Biometric error: $e");
         }
-      } catch (e) {
-        debugPrint("Biometric error: $e");
       }
+
+      // fallback → token valid meski biometric gagal
+      setState(() {
+        _isAuthenticated = true;
+        _role = role;
+        _loading = false;
+      });
+      return;
     }
 
+    // Tidak ada token
     setState(() {
       _isAuthenticated = false;
       _loading = false;
@@ -130,11 +149,18 @@ class _AuthGateState extends State<AuthGate> {
       );
     }
 
-    if (_isAuthenticated) return const HomePage();
+    if (_isAuthenticated) {
+      // ✅ bedakan halaman berdasarkan role
+      if (_role == "admin") {
+        return const HomePage();
+      } else {
+        return const NetizenMenuPage();
+      }
+    }
 
+    // Fallback ke login
     return LoginPage(
       onSignupTap: () => Navigator.pushNamed(context, '/signup'),
-      onFingerprintTap: _checkLogin,
     );
   }
 }

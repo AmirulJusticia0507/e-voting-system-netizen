@@ -9,10 +9,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
 
-class CommentViewSet(viewsets.ModelViewSet):
-    queryset = Comment.objects.all()
-    serializer_class = CommentSerializer
-
     @action(detail=True, methods=["post"])
     def like(self, request, pk=None):
         comment = self.get_object()

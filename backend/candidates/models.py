@@ -1,6 +1,7 @@
 from django.db import models
 from topics.models import Topic
 
+
 class Candidate(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name="candidates")
     name = models.CharField(max_length=200)
@@ -13,8 +14,8 @@ class Candidate(models.Model):
     # 🔹 Helper properties untuk total like/dislike dari komentar
     @property
     def total_likes(self):
-        return self.comment_set.aggregate(total=models.Sum("likes"))["total"] or 0
+        return self.comments.aggregate(total=models.Sum("likes"))["total"] or 0
 
     @property
     def total_dislikes(self):
-        return self.comment_set.aggregate(total=models.Sum("dislikes"))["total"] or 0
+        return self.comments.aggregate(total=models.Sum("dislikes"))["total"] or 0
