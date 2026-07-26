@@ -53,19 +53,24 @@ class _CandidatesPageState extends State<CandidatesPage> {
     setState(() => actionLoading = true);
     try {
       final res = await api.post("votes/", {
-        "user": 1, // 🔹 sementara hardcoded
         "topic": widget.topicId,
         "candidate": candidateId,
       });
 
       if (res.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vote berhasil!")),
+          const SnackBar(content: Text("Vote berhasil! 🎉")),
         );
         fetchCandidates();
       } else {
+        String errMsg = "Gagal vote";
+        try {
+          final data = jsonDecode(res.body);
+          if (data is List && data.isNotEmpty) errMsg = data[0].toString();
+          if (data is Map && data["detail"] != null) errMsg = data["detail"];
+        } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal vote: ${res.body}")),
+          SnackBar(content: Text(errMsg)),
         );
       }
     } catch (e) {
@@ -132,63 +137,123 @@ class _CandidatesPageState extends State<CandidatesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Kandidat: ${widget.topicTitle}"),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: candidates.length,
-              itemBuilder: (context, i) {
-                final c = candidates[i];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: c.photo != null && c.photo.isNotEmpty
-                          ? NetworkImage(c.photo)
-                          : null,
-                      child: c.photo == null || c.photo.isEmpty
-                          ? const Icon(Icons.person)
-                          : null,
-                    ),
-                    title: Text(c.name),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(c.bio),
-                        const SizedBox(height: 4),
-                        Text("👍 ${c.likes}  |  👎 ${c.dislikes}"),
-                      ],
-                    ),
-                    trailing: SizedBox(
-                      width: 160,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.thumb_up),
-                            color: Colors.green,
-                            onPressed: actionLoading ? null : () => likeCandidate(c.id),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.thumb_down),
-                            color: Colors.red,
-                            onPressed: actionLoading ? null : () => dislikeCandidate(c.id),
-                          ),
-                          ElevatedButton(
-                            onPressed: actionLoading ? null : () => voteCandidate(c.id),
-                            child: const Text("Vote"),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.comment),
-                            onPressed: () => openComments(c.id, c.name),
-                          ),
-                        ],
+          : candidates.isEmpty
+              ? const Center(child: Text("Belum ada kandidat pada topik ini."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: candidates.length,
+                  itemBuilder: (context, i) {
+                    final c = candidates[i];
+                    final photoUrl = api.getImageUrl(c.photo);
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ),
-                  ),
-                );
-              },
-            ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: Colors.deepPurple.shade100,
+                                  backgroundImage: photoUrl.isNotEmpty
+                                      ? NetworkImage(photoUrl)
+                                      : null,
+                                  child: photoUrl.isEmpty
+                                      ? const Icon(Icons.person, size: 35, color: Colors.deepPurple)
+                                      : null,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c.name,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        c.bio.isNotEmpty ? c.bio : "Kandidat E-Voting Netizen",
+                                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Row(
+                                        children: [
+                                          Icon(Icons.thumb_up_alt_outlined, size: 16, color: Colors.green[700]),
+                                          const SizedBox(width: 4),
+                                          Text("${c.likes}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                          const SizedBox(width: 16),
+                                          Icon(Icons.thumb_down_alt_outlined, size: 16, color: Colors.red[700]),
+                                          const SizedBox(width: 4),
+                                          Text("${c.dislikes}", style: const TextStyle(fontWeight: FontWeight.bold)),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Divider(height: 24),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.thumb_up),
+                                      color: Colors.green,
+                                      tooltip: "Like",
+                                      onPressed: actionLoading ? null : () => likeCandidate(c.id),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.thumb_down),
+                                      color: Colors.red,
+                                      tooltip: "Dislike",
+                                      onPressed: actionLoading ? null : () => dislikeCandidate(c.id),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.comment),
+                                      color: Colors.blue,
+                                      tooltip: "Komentar",
+                                      onPressed: () => openComments(c.id, c.name),
+                                    ),
+                                  ],
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.deepPurple,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.how_to_vote, size: 18),
+                                  label: const Text("Vote"),
+                                  onPressed: actionLoading ? null : () => voteCandidate(c.id),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
+

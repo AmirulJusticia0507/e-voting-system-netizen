@@ -38,7 +38,6 @@ class _CommentsPageState extends State<CommentsPage> {
     if (_controller.text.isEmpty) return;
 
     final res = await api.post("comments/", {
-      "user": 1, // 🔹 sementara hardcoded
       "topic": widget.topicId,
       "text": _controller.text,
     });
@@ -47,8 +46,9 @@ class _CommentsPageState extends State<CommentsPage> {
       _controller.clear();
       fetchComments();
     } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Gagal komentar: ${res.body}")),
+        SnackBar(content: Text("Gagal melempar komentar: ${res.body}")),
       );
     }
   }
@@ -56,36 +56,78 @@ class _CommentsPageState extends State<CommentsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Komentar: ${widget.topicTitle}")),
+      appBar: AppBar(
+        title: Text("Komentar: ${widget.topicTitle}"),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              itemCount: comments.length,
-              itemBuilder: (context, i) {
-                final c = comments[i];
-                return ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(c.text),
-                  subtitle: Text("👍 ${c.likes} | 👎 ${c.dislikes}"),
-                );
-              },
-            ),
+            child: comments.isEmpty
+                ? const Center(child: Text("Belum ada komentar pada topik ini."))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: comments.length,
+                    itemBuilder: (context, i) {
+                      final c = comments[i];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.deepPurple,
+                            child: Icon(Icons.person, color: Colors.white),
+                          ),
+                          title: Text(
+                            c.username ?? "Netizen",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 4),
+                              Text(c.text, style: const TextStyle(fontSize: 15)),
+                              const SizedBox(height: 4),
+                              Text(
+                                "👍 ${c.likes}  |  👎 ${c.dislikes}",
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                )
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration: const InputDecoration(
-                      hintText: "Tulis komentar...",
+                    decoration: InputDecoration(
+                      hintText: "Tulis komentar netizen...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.send),
+                  icon: const Icon(Icons.send, color: Colors.deepPurple),
                   onPressed: postComment,
                 )
               ],
@@ -95,4 +137,5 @@ class _CommentsPageState extends State<CommentsPage> {
       ),
     );
   }
+
 }

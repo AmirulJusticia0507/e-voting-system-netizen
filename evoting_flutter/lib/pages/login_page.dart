@@ -58,14 +58,30 @@ class _LoginPageState extends State<LoginPage> {
     if (res.statusCode == 200) {
       final data = jsonDecode(res.body);
       final access = data["access"];
-      await api.saveToken(access);
-      await storage.write(key: "access_token", value: access);
+      final userData = data["user"];
+      final isStaff = (userData != null && (userData["is_staff"] == true || userData["is_superuser"] == true));
+      final roleName = isStaff ? "admin" : "netizen";
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomePage()),
+      await api.saveToken(
+        access,
+        role: isStaff ? UserRole.admin : UserRole.netizen,
+        roleName: roleName,
       );
+
+      if (!mounted) return;
+      if (isStaff) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const NetizenMenuPage()),
+        );
+      }
     } else {
+
       String errorMsg =
           "Login gagal, periksa kembali nomor/username dan password.";
       try {

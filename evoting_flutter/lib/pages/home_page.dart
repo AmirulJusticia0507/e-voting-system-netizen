@@ -45,7 +45,8 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    final isSuperadmin = user?['is_superuser'] ?? false;
+    final isSuperadmin = (user?['is_staff'] == true || user?['is_superuser'] == true);
+
 
     // Menu khusus netizen
     final netizenMenu = [

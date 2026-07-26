@@ -35,18 +35,48 @@ class ApiService {
   String _getKey(UserRole role) =>
       role == UserRole.admin ? "token_admin" : "token_netizen";
 
-  Future<String?> getToken([UserRole role = UserRole.netizen]) async =>
-      await storage.read(key: _getKey(role));
+  Future<String?> getToken([UserRole role = UserRole.netizen]) async {
+    final token = await storage.read(key: "access_token");
+    if (token != null && token.isNotEmpty) return token;
+    return await storage.read(key: _getKey(role));
+  }
 
-  Future<void> saveToken(String token,
-      [UserRole role = UserRole.netizen]) async =>
-      await storage.write(key: _getKey(role), value: token);
+  Future<void> saveToken(String token, {UserRole role = UserRole.netizen, String? roleName}) async {
+    await storage.write(key: "access_token", value: token);
+    await storage.write(key: _getKey(role), value: token);
+    if (roleName != null) {
+      await storage.write(key: "user_role", value: roleName);
+    } else {
+      await storage.write(
+        key: "user_role",
+        value: role == UserRole.admin ? "admin" : "netizen",
+      );
+    }
+  }
 
-  Future<void> clearToken([UserRole role = UserRole.netizen]) async =>
-      await storage.delete(key: _getKey(role));
+  Future<void> clearToken([UserRole role = UserRole.netizen]) async {
+    await storage.delete(key: "access_token");
+    await storage.delete(key: "user_role");
+    await storage.delete(key: "token_netizen");
+    await storage.delete(key: "token_admin");
+  }
 
   Future<void> logout([UserRole role = UserRole.netizen]) async =>
       await clearToken(role);
+
+  /// Helper untuk merubah path gambar relatif dari server menjadi URL lengkap
+  String getImageUrl(String? path) {
+    if (path == null || path.isEmpty) return "";
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
+    }
+    final hostBase = baseUrl.endsWith("/api")
+        ? baseUrl.substring(0, baseUrl.length - 4)
+        : baseUrl;
+    final cleanPath = path.startsWith("/") ? path : "/$path";
+    return "$hostBase$cleanPath";
+  }
+
 
   /// ================== HELPER ==================
   Future<Map<String, String>> _headers(

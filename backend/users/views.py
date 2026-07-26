@@ -1,20 +1,32 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate, get_user_model
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
-from rest_framework import status
+from django.contrib.auth import authenticate, get_user_model
 from .serializers import PhoneTokenObtainPairSerializer, UserSerializer
 
 User = get_user_model()
+
 
 # 🔹 CRUD User via ViewSet
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    @action(detail=False, methods=["get", "patch"], permission_classes=[IsAuthenticated])
+    def me(self, request):
+        user = request.user
+        if request.method == "PATCH":
+            serializer = self.get_serializer(user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
 
 
 @api_view(["POST"])

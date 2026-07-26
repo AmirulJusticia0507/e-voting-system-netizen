@@ -6,16 +6,31 @@ from django.db.models import Count, Sum
 from .models import Vote
 from .serializers import VoteSerializer
 
+from users.models import User
+
 class VoteViewSet(viewsets.ModelViewSet):
-    queryset = Vote.objects.all()
     serializer_class = VoteSerializer
 
+    def get_queryset(self):
+        queryset = Vote.objects.all()
+        user_id = self.request.query_params.get("user")
+        if user_id:
+            queryset = queryset.filter(user_id=user_id)
+        return queryset
+
     def perform_create(self, serializer):
-        user = serializer.validated_data["user"]
+        user = serializer.validated_data.get("user")
+        if not user:
+            user = self.request.user if self.request.user.is_authenticated else User.objects.first()
+            if not user:
+                raise ValidationError("Pengguna tidak ditemukan.")
+
         topic = serializer.validated_data["topic"]
         if Vote.objects.filter(user=user, topic=topic).exists():
             raise ValidationError("User sudah memilih pada topik ini.")
-        serializer.save()
+
+        serializer.save(user=user)
+
 
     # 🔹 Custom action untuk rekap hasil per kandidat
     @action(detail=False, methods=["get"], url_path="results")

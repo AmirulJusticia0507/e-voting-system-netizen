@@ -13,6 +13,7 @@ class ResultsPage extends StatefulWidget {
 class _ResultsPageState extends State<ResultsPage> {
   final api = ApiService();
   List<dynamic> results = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -20,116 +21,182 @@ class _ResultsPageState extends State<ResultsPage> {
     fetchResults();
   }
 
-  void fetchResults() async {
-    final res = await api.get("votes/results/");
-    if (res.statusCode == 200) {
-      setState(() {
-        results = jsonDecode(res.body);
-      });
+  Future<void> fetchResults() async {
+    setState(() => isLoading = true);
+    try {
+      final res = await api.get("votes/results/");
+      if (res.statusCode == 200) {
+        setState(() {
+          results = jsonDecode(res.body);
+          isLoading = false;
+        });
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (_) {
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("📊 Hasil Voting")),
-      body: results.isEmpty
+      appBar: AppBar(
+        title: const Text("📊 Rekap Hasil Voting"),
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
+      body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: results.length,
-              itemBuilder: (context, i) {
-                final topic = results[i];
-                final candidates = List<Map<String, dynamic>>.from(topic["candidates"]);
+          : results.isEmpty
+              ? const Center(
+                  child: Text(
+                    "Belum ada data hasil voting.",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: results.length,
+                  itemBuilder: (context, i) {
+                    final topic = results[i];
+                    final candidates =
+                        List<Map<String, dynamic>>.from(topic["candidates"] ?? []);
 
-                return Card(
-                  margin: const EdgeInsets.all(12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Text(
-                          topic["topic_title"],
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    if (candidates.isEmpty) {
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text("Topik: ${topic["topic_title"]} (Belum ada suara)"),
                         ),
-                        const SizedBox(height: 16),
+                      );
+                    }
 
-                        // 🔹 Bar Chart
-                        SizedBox(
-                          height: 200,
-                          child: BarChart(
-                            BarChartData(
-                              alignment: BarChartAlignment.spaceAround,
-                              barGroups: candidates.map((c) {
-                                return BarChartGroupData(
-                                  x: candidates.indexOf(c),
-                                  barRods: [
-                                    BarChartRodData(
-                                      toY: (c["vote_count"] as num).toDouble(),
-                                      color: Colors.blue,
-                                      width: 20,
-                                      borderRadius: BorderRadius.circular(6),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              topic["topic_title"] ?? "Topik Voting",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.deepPurple,
+                              ),
+                            ),
+                            const Divider(height: 20),
+
+                            // 🔹 Legend & Vote Counts
+                            ...candidates.map((c) {
+                              final color = Colors
+                                  .primaries[candidates.indexOf(c) % Colors.primaries.length];
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        c["candidate_name"] ?? "Kandidat",
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    Text(
+                                      "${c["vote_count"]} Suara",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple,
+                                      ),
                                     ),
                                   ],
-                                );
-                              }).toList(),
-                              titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: true),
                                 ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    getTitlesWidget: (value, meta) {
-                                      if (value.toInt() < candidates.length) {
-                                        return Text(
-                                          candidates[value.toInt()]["candidate_name"],
-                                          style: const TextStyle(fontSize: 10),
-                                        );
-                                      }
-                                      return const Text("");
-                                    },
+                              );
+                            }),
+                            const SizedBox(height: 20),
+
+                            // 🔹 Bar Chart
+                            const Text("Grafik Batang Suara:",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13)),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 180,
+                              child: BarChart(
+                                BarChartData(
+                                  alignment: BarChartAlignment.spaceAround,
+                                  barGroups: candidates.map((c) {
+                                    final color = Colors.primaries[
+                                        candidates.indexOf(c) % Colors.primaries.length];
+                                    return BarChartGroupData(
+                                      x: candidates.indexOf(c),
+                                      barRods: [
+                                        BarChartRodData(
+                                          toY: (c["vote_count"] as num).toDouble(),
+                                          color: color,
+                                          width: 24,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                      ],
+                                    );
+                                  }).toList(),
+                                  titlesData: FlTitlesData(
+                                    leftTitles: const AxisTitles(
+                                      sideTitles: SideTitles(
+                                          showTitles: true, reservedSize: 28),
+                                    ),
+                                    topTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    rightTitles: const AxisTitles(
+                                      sideTitles: SideTitles(showTitles: false),
+                                    ),
+                                    bottomTitles: AxisTitles(
+                                      sideTitles: SideTitles(
+                                        showTitles: true,
+                                        getTitlesWidget: (value, meta) {
+                                          final idx = value.toInt();
+                                          if (idx >= 0 && idx < candidates.length) {
+                                            return Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                candidates[idx]["candidate_name"] ?? "",
+                                                style: const TextStyle(fontSize: 10),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            );
+                                          }
+                                          return const Text("");
+                                        },
+                                      ),
+                                    ),
                                   ),
+                                  gridData: const FlGridData(show: true),
+                                  borderData: FlBorderData(show: false),
                                 ),
                               ),
-                              gridData: FlGridData(show: true),
-                              borderData: FlBorderData(show: false),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(height: 20),
-
-                        // 🔹 Pie Chart
-                        SizedBox(
-                          height: 200,
-                          child: PieChart(
-                            PieChartData(
-                              sections: candidates.map((c) {
-                                final color = Colors.primaries[candidates.indexOf(c) % Colors.primaries.length];
-                                return PieChartSectionData(
-                                  value: (c["vote_count"] as num).toDouble(),
-                                  title: "${c["vote_count"]}",
-                                  color: color,
-                                  radius: 60,
-                                  titleStyle: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                );
-                              }).toList(),
-                              sectionsSpace: 2,
-                              centerSpaceRadius: 30,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
+

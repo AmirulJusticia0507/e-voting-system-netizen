@@ -1,6 +1,7 @@
 class Comment {
   final int id;
-  final int userId;
+  final int? userId;
+  final String? username;
   final int topicId;
   final String text;
   final int likes;
@@ -10,7 +11,8 @@ class Comment {
 
   Comment({
     required this.id,
-    required this.userId,
+    this.userId,
+    this.username,
     required this.topicId,
     required this.text,
     required this.likes,
@@ -22,11 +24,13 @@ class Comment {
   factory Comment.fromJson(Map<String, dynamic> json) => Comment(
         id: json["id"],
         userId: json["user"],
+        username: json["username"],
         topicId: json["topic"],
-        text: json["text"],
-        likes: json["likes"],
-        dislikes: json["dislikes"],
-        isReported: json["is_reported"],
-        createdAt: json["created_at"],
+        text: json["text"] ?? "",
+        likes: json["likes"] ?? 0,
+        dislikes: json["dislikes"] ?? 0,
+        isReported: json["is_reported"] ?? false,
+        createdAt: json["created_at"] ?? "",
       );
 }
+

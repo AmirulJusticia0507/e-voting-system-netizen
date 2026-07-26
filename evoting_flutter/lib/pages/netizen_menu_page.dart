@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class NetizenMenuPage extends StatelessWidget {
   const NetizenMenuPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final api = ApiService();
     final menuItems = [
-      {"title": "Dashboard", "icon": Icons.dashboard, "color": Colors.blue, "route": "/dashboard"},
-      {"title": "Voting", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/voting"},
-      {"title": "Komentar", "icon": Icons.comment, "color": Colors.teal, "route": "/comments"},
-      {"title": "Profil", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
+      {"title": "Topik Voting", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
+      {"title": "Mulai Voting", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/voting"},
+      {"title": "Hasil Voting", "icon": Icons.bar_chart, "color": Colors.teal, "route": "/results"},
+      {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
     ];
 
     return Scaffold(
@@ -18,6 +20,18 @@ class NetizenMenuPage extends StatelessWidget {
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: "Logout",
+            onPressed: () async {
+              await api.logout();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
+            },
+          )
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -37,19 +51,26 @@ class NetizenMenuPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      (item["color"] as Color).withOpacity(0.8),
-                      (item["color"] as Color).withOpacity(0.5),
+                      (item["color"] as Color).withOpacity(0.85),
+                      (item["color"] as Color).withOpacity(0.6),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (item["color"] as Color).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    )
+                  ],
                 ),
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(item["icon"] as IconData, size: 50, color: Colors.white),
+                      Icon(item["icon"] as IconData, size: 48, color: Colors.white),
                       const SizedBox(height: 12),
                       Text(
                         item["title"] as String,
@@ -58,7 +79,6 @@ class NetizenMenuPage extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          letterSpacing: 1.1,
                         ),
                       ),
                     ],
@@ -72,3 +92,4 @@ class NetizenMenuPage extends StatelessWidget {
     );
   }
 }
+

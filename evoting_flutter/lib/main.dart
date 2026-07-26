@@ -13,7 +13,7 @@ import 'pages/topics_page.dart';
 import 'pages/candidates_page.dart';
 import 'pages/comments_page.dart';
 import 'pages/profile_page.dart';
-import 'pages/netizen_menu_page.dart'; // ✅ penting
+import 'pages/admin_manage_pages.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,16 +36,22 @@ class MyApp extends StatelessWidget {
       home: const AuthGate(),
       routes: {
         '/login': (context) => LoginPage(
-              onSignupTap: () =>
-                  Navigator.pushNamed(context, '/signup'), // ✅ default
+              onSignupTap: () => Navigator.pushNamed(context, '/signup'),
             ),
         '/signup': (context) => const NetizenSignupPage(),
         '/home': (context) => const HomePage(),
+        '/dashboard': (context) => const NetizenMenuPage(),
         '/voting': (context) => VotingPage(),
         '/results': (context) => const ResultsPage(),
         '/topics': (context) => const TopicsPage(),
         '/profile': (context) => const ProfilePage(),
+        '/manage_users': (context) => const ManageUsersPage(),
+        '/manage_topics': (context) => const ManageTopicsPage(),
+        '/manage_candidates': (context) => const ManageCandidatesPage(),
+        '/manage_votes': (context) => const ManageVotesPage(),
+        '/manage_comments': (context) => const ManageCommentsPage(),
       },
+
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/candidates':
