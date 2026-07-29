@@ -163,7 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 16),
                   Text(
                     user!['username'] ?? user!['phone_number'] ?? "Pengguna",
-                    style: const TextStyle(fontSize: 20, FontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -187,7 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       "Riwayat Voting Saya (${userVotes.length})",
-                      style: const TextStyle(fontSize: 18, FontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ),
                   const SizedBox(height: 12),

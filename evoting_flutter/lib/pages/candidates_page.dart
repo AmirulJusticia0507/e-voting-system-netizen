@@ -19,37 +19,60 @@ class _CandidatesPageState extends State<CandidatesPage> {
   List<Candidate> candidates = [];
   bool isLoading = true;
   bool actionLoading = false;
+  int? votedCandidateId;
+  bool hasVotedTopic = false;
 
   @override
   void initState() {
     super.initState();
-    fetchCandidates();
+    fetchData();
   }
 
-  Future<void> fetchCandidates() async {
+  Future<void> fetchData() async {
     setState(() => isLoading = true);
     try {
-      final res = await api.get("candidates/?topic=${widget.topicId}");
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as List;
-        setState(() {
-          candidates = data.map((e) => Candidate.fromJson(e)).toList();
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal ambil kandidat: ${res.body}")),
-        );
+      final resCand = await api.get("candidates/?topic=${widget.topicId}");
+      if (resCand.statusCode == 200) {
+        final data = jsonDecode(resCand.body) as List;
+        candidates = data.map((e) => Candidate.fromJson(e)).toList();
+      }
+
+      // Check current user votes
+      final resUser = await api.get("users/me/");
+      if (resUser.statusCode == 200) {
+        final userData = jsonDecode(resUser.body);
+        final userId = userData['id'];
+        final resVotes = await api.get("votes/?user=$userId");
+        if (resVotes.statusCode == 200) {
+          final List votes = jsonDecode(resVotes.body);
+          final userTopicVote = votes.firstWhere(
+            (v) => (v['topic'] is int ? v['topic'] : v['topic']?['id']) == widget.topicId,
+            orElse: () => null,
+          );
+          if (userTopicVote != null) {
+            hasVotedTopic = true;
+            votedCandidateId = userTopicVote['candidate'] is int
+                ? userTopicVote['candidate']
+                : userTopicVote['candidate']?['id'];
+          } else {
+            hasVotedTopic = false;
+            votedCandidateId = null;
+          }
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $e")),
+        );
+      }
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> voteCandidate(int candidateId) async {
+    if (hasVotedTopic) return;
     setState(() => actionLoading = true);
     try {
       final res = await api.post("votes/", {
@@ -58,10 +81,12 @@ class _CandidatesPageState extends State<CandidatesPage> {
       });
 
       if (res.statusCode == 201) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vote berhasil! 🎉")),
+          const SnackBar(content: Text("Vote berhasil! 🎉 Bukti voting telah dikirim ke WhatsApp Anda.")),
         );
-        fetchCandidates();
+
+        fetchData();
       } else {
         String errMsg = "Gagal vote";
         try {
@@ -69,16 +94,18 @@ class _CandidatesPageState extends State<CandidatesPage> {
           if (data is List && data.isNotEmpty) errMsg = data[0].toString();
           if (data is Map && data["detail"] != null) errMsg = data["detail"];
         } catch (_) {}
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(errMsg)),
         );
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error vote: $e")),
       );
     } finally {
-      setState(() => actionLoading = false);
+      if (mounted) setState(() => actionLoading = false);
     }
   }
 
@@ -87,17 +114,19 @@ class _CandidatesPageState extends State<CandidatesPage> {
     try {
       final res = await api.post("candidates/$candidateId/like/", {});
       if (res.statusCode == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Liked 👍")),
         );
-        fetchCandidates();
+        fetchData();
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error like: $e")),
       );
     } finally {
-      setState(() => actionLoading = false);
+      if (mounted) setState(() => actionLoading = false);
     }
   }
 
@@ -106,17 +135,19 @@ class _CandidatesPageState extends State<CandidatesPage> {
     try {
       final res = await api.post("candidates/$candidateId/dislike/", {});
       if (res.statusCode == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Disliked 👎")),
         );
-        fetchCandidates();
+        fetchData();
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error dislike: $e")),
       );
     } finally {
-      setState(() => actionLoading = false);
+      if (mounted) setState(() => actionLoading = false);
     }
   }
 
@@ -150,10 +181,15 @@ class _CandidatesPageState extends State<CandidatesPage> {
                   itemBuilder: (context, i) {
                     final c = candidates[i];
                     final photoUrl = api.getImageUrl(c.photo);
+                    final isMyVotedCandidate = (c.id == votedCandidateId);
+
                     return Card(
                       margin: const EdgeInsets.only(bottom: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
+                        side: isMyVotedCandidate
+                            ? const BorderSide(color: Colors.green, width: 2)
+                            : BorderSide.none,
                       ),
                       elevation: 4,
                       child: Padding(
@@ -178,12 +214,34 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        c.name,
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              c.name,
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                          if (isMyVotedCandidate)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.shade100,
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: const Text(
+                                                "Voted ✓",
+                                                style: TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
@@ -206,6 +264,33 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                   ),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            // 📊 Survey Keunggulan Persentase
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Survei Keunggulan:",
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                                ),
+                                Text(
+                                  "${c.votePercentage}% (${c.voteCount} Suara)",
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: (c.votePercentage / 100).clamp(0.0, 1.0),
+                                minHeight: 8,
+                                backgroundColor: Colors.grey.shade200,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  isMyVotedCandidate ? Colors.green : Colors.deepPurple,
+                                ),
+                              ),
                             ),
                             const Divider(height: 24),
                             Row(
@@ -235,15 +320,24 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                 ),
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurple,
+                                    backgroundColor: isMyVotedCandidate
+                                        ? Colors.green
+                                        : (hasVotedTopic ? Colors.grey : Colors.deepPurple),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.how_to_vote, size: 18),
-                                  label: const Text("Vote"),
-                                  onPressed: actionLoading ? null : () => voteCandidate(c.id),
+                                  icon: Icon(
+                                    isMyVotedCandidate ? Icons.check_circle : Icons.how_to_vote,
+                                    size: 18,
+                                  ),
+                                  label: Text(
+                                    isMyVotedCandidate
+                                        ? "Pilihan Anda"
+                                        : (hasVotedTopic ? "Sudah Vote" : "Vote"),
+                                  ),
+                                  onPressed: (actionLoading || hasVotedTopic) ? null : () => voteCandidate(c.id),
                                 ),
                               ],
                             ),
@@ -256,4 +350,5 @@ class _CandidatesPageState extends State<CandidatesPage> {
     );
   }
 }
+
 

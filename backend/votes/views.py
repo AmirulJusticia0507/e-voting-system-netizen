@@ -8,6 +8,8 @@ from .serializers import VoteSerializer
 
 from users.models import User
 
+from .services import send_whatsapp_vote_notification
+
 class VoteViewSet(viewsets.ModelViewSet):
     serializer_class = VoteSerializer
 
@@ -29,7 +31,13 @@ class VoteViewSet(viewsets.ModelViewSet):
         if Vote.objects.filter(user=user, topic=topic).exists():
             raise ValidationError("User sudah memilih pada topik ini.")
 
-        serializer.save(user=user)
+        vote = serializer.save(user=user)
+        # 📲 Kirim notifikasi bukti vote ke WhatsApp voters
+        try:
+            send_whatsapp_vote_notification(vote)
+        except Exception as e:
+            print(f"Gagal memicu WhatsApp notification: {e}")
+
 
 
     # 🔹 Custom action untuk rekap hasil per kandidat

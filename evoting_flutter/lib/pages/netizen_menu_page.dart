@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
-class NetizenMenuPage extends StatelessWidget {
+class NetizenMenuPage extends StatefulWidget {
   const NetizenMenuPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final api = ApiService();
-    final menuItems = [
-      {"title": "Topik Voting", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
-      {"title": "Mulai Voting", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/voting"},
-      {"title": "Hasil Voting", "icon": Icons.bar_chart, "color": Colors.teal, "route": "/results"},
-      {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
-    ];
+  State<NetizenMenuPage> createState() => _NetizenMenuPageState();
+}
 
+class _NetizenMenuPageState extends State<NetizenMenuPage> {
+  final api = ApiService();
+
+  final List<Map<String, dynamic>> menuItems = [
+    {"title": "Topik Voting", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
+    {"title": "Mulai Voting", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/voting"},
+    {"title": "Hasil Voting", "icon": Icons.bar_chart, "color": Colors.teal, "route": "/results"},
+    {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Menu Netizen"),
@@ -26,9 +32,8 @@ class NetizenMenuPage extends StatelessWidget {
             tooltip: "Logout",
             onPressed: () async {
               await api.logout();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
+              if (!mounted) return;
+              Navigator.pushReplacementNamed(context, '/login');
             },
           )
         ],
@@ -92,4 +97,3 @@ class NetizenMenuPage extends StatelessWidget {
     );
   }
 }
-

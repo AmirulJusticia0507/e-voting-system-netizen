@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../services/api_service.dart';
+
 
 class ManageUsersPage extends StatefulWidget {
   const ManageUsersPage({super.key});
@@ -162,53 +164,219 @@ class ManageCandidatesPage extends StatefulWidget {
 class _ManageCandidatesPageState extends State<ManageCandidatesPage> {
   final api = ApiService();
   List<dynamic> candidates = [];
+  List<dynamic> topics = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchCandidates();
+    fetchData();
   }
 
-  Future<void> fetchCandidates() async {
+  Future<void> fetchData() async {
     setState(() => isLoading = true);
-    final res = await api.get("candidates/");
-    if (res.statusCode == 200) {
+    final resCand = await api.get("candidates/");
+    final resTop = await api.get("topics/");
+
+    if (mounted) {
       setState(() {
-        candidates = jsonDecode(res.body);
+        if (resCand.statusCode == 200) candidates = jsonDecode(resCand.body);
+        if (resTop.statusCode == 200) topics = jsonDecode(resTop.body);
         isLoading = false;
       });
-    } else {
-      setState(() => isLoading = false);
     }
+  }
+
+  void _showCandidateDialog([Map<String, dynamic>? candidate]) {
+    final isEdit = candidate != null;
+    final nameCtrl = TextEditingController(text: isEdit ? candidate['name'] : '');
+    final bioCtrl = TextEditingController(text: isEdit ? candidate['bio'] : '');
+    int? selectedTopicId = isEdit
+        ? (candidate['topic'] is int ? candidate['topic'] : candidate['topic']?['id'])
+        : (topics.isNotEmpty ? topics.first['id'] : null);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(isEdit ? "Edit Kandidat" : "Tambah Kandidat Baru"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (topics.isNotEmpty) ...[
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text("Pilih Topik:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                  DropdownButton<int>(
+                    isExpanded: true,
+                    value: selectedTopicId,
+                    items: topics.map<DropdownMenuItem<int>>((t) {
+                      return DropdownMenuItem<int>(
+                        value: t['id'],
+                        child: Text(t['title'] ?? '', overflow: TextOverflow.ellipsis),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => selectedTopicId = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: "Nama Kandidat", border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: bioCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: "Visi / Misi / Bio", border: OutlineInputBorder()),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty || selectedTopicId == null) return;
+                final body = {
+                  "topic": selectedTopicId,
+                  "name": nameCtrl.text,
+                  "bio": bioCtrl.text,
+                };
+
+                if (isEdit) {
+                  final res = await api.patchJson("candidates/${candidate['id']}/", body);
+                  if (res.statusCode == 200 && mounted) {
+                    Navigator.pop(ctx);
+                    fetchData();
+                  }
+                } else {
+                  final res = await api.post("candidates/", body);
+                  if (res.statusCode == 201 && mounted) {
+                    Navigator.pop(ctx);
+                    fetchData();
+                  }
+                }
+              },
+              child: Text(isEdit ? "Perbarui" : "Simpan"),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deleteCandidate(int id, String name) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Hapus Kandidat"),
+        content: Text("Apakah Anda yakin ingin menghapus kandidat '$name'?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              final token = await api.getToken();
+              final uri = Uri.parse("${api.baseUrl}candidates/$id/");
+              final delRes = await http.delete(uri, headers: {
+                if (token != null) "Authorization": "Bearer $token",
+              });
+
+              if ((delRes.statusCode == 204 || delRes.statusCode == 200) && mounted) {
+                Navigator.pop(ctx);
+                fetchData();
+              } else if (mounted) {
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Gagal menghapus kandidat. Status: ${delRes.statusCode}")),
+                );
+              }
+            },
+            child: const Text("Hapus"),
+          )
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Kelola Kandidat"), backgroundColor: Colors.teal, foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text("Kelola Kandidat"),
+        backgroundColor: Colors.teal,
+        foregroundColor: Colors.white,
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showCandidateDialog(),
+        backgroundColor: Colors.teal,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text("Tambah Kandidat", style: TextStyle(color: Colors.white)),
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: candidates.length,
-              itemBuilder: (context, i) {
-                final c = candidates[i];
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage: c['photo'] != null ? NetworkImage(api.getImageUrl(c['photo'])) : null,
-                      child: c['photo'] == null ? const Icon(Icons.person) : null,
-                    ),
-                    title: Text(c['name'] ?? ''),
-                    subtitle: Text(c['bio'] ?? ''),
-                  ),
-                );
-              },
-            ),
+          : candidates.isEmpty
+              ? const Center(child: Text("Belum ada kandidat."))
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: candidates.length,
+                  itemBuilder: (context, i) {
+                    final c = candidates[i];
+                    final photoUrl = api.getImageUrl(c['photo']);
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 3,
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          radius: 25,
+                          backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+                          child: photoUrl.isEmpty ? const Icon(Icons.person) : null,
+                        ),
+                        title: Text(
+                          c['name'] ?? '',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(c['bio'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Suara: ${c['vote_count'] ?? 0} (${c['vote_percentage'] ?? 0}%)",
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.teal),
+                            ),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _showCandidateDialog(c),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteCandidate(c['id'], c['name'] ?? ''),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }
+
 
 class ManageVotesPage extends StatefulWidget {
   const ManageVotesPage({super.key});

@@ -189,3 +189,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =============================================================================
+# 📲 WhatsApp Gateway Configuration
+# Dukung Fonnte (https://fonnte.com) atau gateway lain
+# Isi WA_GATEWAY_TOKEN di file .env dengan token API vendor WA Anda
+# Jika kosong, sistem akan print log simulasi (mode development)
+# =============================================================================
+WA_GATEWAY_URL = os.getenv("WA_GATEWAY_URL", "https://api.fonnte.com/send")
+WA_GATEWAY_TOKEN = os.getenv("WA_GATEWAY_TOKEN", None)
+
