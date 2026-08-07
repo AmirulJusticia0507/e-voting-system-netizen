@@ -219,3 +219,10 @@ VOTE_BROADCAST = os.getenv("VOTE_BROADCAST", "True") == "True"
 # Kosongkan agar memakai SECRET_KEY (hanya untuk development).
 RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
 
+# =============================================================================
+# 📱 Sharing / Public (V7-A)
+# BASE URL publik untuk membangun link share & QR yang bisa dibuka tanpa login.
+# Di produksi ganti dengan domain publik (mis. https://evoting.example.id).
+# =============================================================================
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+

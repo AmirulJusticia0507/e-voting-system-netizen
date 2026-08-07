@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
+import '../widgets/topic_share_sheet.dart';
 
 class ResultsPage extends StatefulWidget {
   const ResultsPage({super.key});
@@ -91,7 +92,20 @@ class _ResultsPageState extends State<ResultsPage> {
                                 color: Colors.deepPurple,
                               ),
                             ),
-                            const Divider(height: 20),
+                            Row(children: [
+                              const Spacer(),
+                              IconButton(
+                                tooltip: "Bagikan hasil & QR",
+                                icon: const Icon(Icons.share),
+                                color: Colors.deepPurple,
+                                onPressed: () => showShareSheet(
+                                  context,
+                                  topic["topic_id"] as int,
+                                  topicTitle: topic["topic_title"]?.toString(),
+                                ),
+                              ),
+                            ]),
+                            const Divider(height: 8),
 
                             // 🔹 Legend & Vote Counts
                             ...candidates.map((c) {

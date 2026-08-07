@@ -89,6 +89,22 @@ class UserViewSet(viewsets.ModelViewSet):
         roles = Role.objects.filter(is_active=True).values("id", "name", "description")
         return Response(list(roles))
 
+    # 🎮 V7-B3: profil gamification user yang login
+    @action(detail=False, methods=["get"])
+    def gamification(self, request):
+        from .gamification import user_gamification, leaderboard
+
+        return Response({
+            "me": user_gamification(request.user),
+            "leaderboard": leaderboard(),
+            "badges_meta": {
+                "first_vote": {"label": "Voter Pertama", "icon": "🎯"},
+                "streak_3": {"label": "3 Hari Beruntun", "icon": "🔥"},
+                "streak_7": {"label": "Seminggu Kuat", "icon": "⚡"},
+                "streak_30": {"label": "Sebulan Loyal", "icon": "👑"},
+            },
+        })
+
 
 
 @api_view(["POST"])

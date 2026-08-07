@@ -19,6 +19,10 @@ import 'pages/election_manage_pages.dart';
 import 'pages/live_results_page.dart';
 import 'pages/recap_page.dart';
 import 'pages/audit_page.dart';
+import 'pages/public_results_page.dart';
+import 'pages/qr_scan_page.dart';
+import 'pages/region_battle_page.dart';
+import 'pages/gamification_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +42,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Poppins',
       ),
-      home: const AuthGate(),
+      home: const RootGate(),
       routes: {
         '/login': (context) => LoginPage(
               onSignupTap: () => Navigator.pushNamed(context, '/signup'),
@@ -51,6 +55,10 @@ class MyApp extends StatelessWidget {
         '/live_results': (context) => const LiveResultsPage(),
         '/recap': (context) => const RecapPage(),
         '/audit': (context) => const AuditPage(),
+        '/qr_scan': (context) => const QRScanPage(),
+        '/region_battle': (context) => const RegionBattlePage(),
+        '/gamification': (context) => const GamificationPage(),
+        '/public_results': (context) => const _PublicResultsRedirect(),
         '/topics': (context) => const TopicsPage(),
         '/profile': (context) => const ProfilePage(),
         '/manage_users': (context) => const ManageUsersPage(),
@@ -86,6 +94,37 @@ class MyApp extends StatelessWidget {
         }
       },
     );
+  }
+}
+
+/// Gerbang masuk: jika URL punya `?v=<topic_id>` (dibuka dari link share/QR),
+/// langsung tampilkan hasil publik tanpa login. Selain itu jalankan AuthGate biasa.
+class RootGate extends StatelessWidget {
+  const RootGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    if (kIsWeb) {
+      final v = Uri.base.queryParameters['v'];
+      if (v != null) {
+        final id = int.tryParse(v);
+        if (id != null) return PublicResultsPage(topicId: id);
+      }
+    }
+    return const AuthGate();
+  }
+}
+
+/// Untuk rute '/public_results' (fallback, dipakai saat tombol back dari QR).
+class _PublicResultsRedirect extends StatelessWidget {
+  const _PublicResultsRedirect();
+
+  @override
+  Widget build(BuildContext context) {
+    final v = Uri.base.queryParameters['v'];
+    final id = int.tryParse(v ?? "");
+    if (id != null) return PublicResultsPage(topicId: id);
+    return const Scaffold(body: Center(child: Text("Topik tidak ditemukan.")));
   }
 }
 

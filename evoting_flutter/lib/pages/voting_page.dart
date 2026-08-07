@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/candidate.dart';
 import '../models/topic.dart';
 import '../services/api_service.dart';
+import '../widgets/topic_share_sheet.dart';
 
 class VotingPage extends StatefulWidget {
   final int? topicId;
@@ -135,6 +136,18 @@ class _VotingPageState extends State<VotingPage> {
         title: Text(selectedTopicTitle ?? "Voting Topik"),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
+        actions: [
+          if (selectedTopicId != null)
+            IconButton(
+              tooltip: "Bagikan & QR",
+              icon: const Icon(Icons.qr_code_2),
+              onPressed: () => showShareSheet(
+                context,
+                selectedTopicId!,
+                topicTitle: selectedTopicTitle,
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [

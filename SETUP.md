@@ -330,7 +330,33 @@ untuk transparansi tanpa membocorkan detail suara.
 
 ---
 
-## 6. Troubleshooting
+## 6. V7 — Viral & Engagement (Share/QR, Region Battle, Gamifikasi)
+
+Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Korea:
+
+### A. Share & QR (transparansi publik, tanpa login)
+- `GET /api/votes/public/<topic_id>/` (AllowAny) — hasil topik + `evidence_root` + share payload.
+- `GET /api/votes/public/share/<topic_id>/` (AllowAny) — `share_url`, `share_text`, ringkasan (untuk QR/tombol share).
+- Setting `PUBLIC_BASE_URL` di `.env` menentukan domain link share (produksi: domain web Flutter).
+- Flutter:
+  - `widgets/topic_share_sheet.dart` — bottom-sheet QR + "Salin"/"Bagikan" (pakai `qr_flutter` + `share_plus`).
+  - Tombol share di halaman Voting & Hasil; `pages/qr_scan_page.dart` (scan QR buka hasil, `mobile_scanner`).
+  - `pages/public_results_page.dart` — hasil publik; dibuka dari link `?v=<topic_id>` tanpa login (di-web via `RootGate`).
+- `share_plus`, `qr_flutter`, `mobile_scanner` sudah ditambahkan ke `pubspec.yaml` → jalankan `flutter pub get`.
+
+### B. Live ranking flash + Region Battle + Gamification
+- **Live ranking flash**: halaman `live_results_page.dart` kini mengurutkan kandidat secara live dengan animasi bar & badge naik/turun (▴/▾) tiap snapshot WebSocket.
+- **Region Battle**: `GET /api/votes/regions/` → `region_leaderboard()` (partisipasi per wilayah). Flutter: `pages/region_battle_page.dart`.
+- **Gamifikasi**: field `points`, `vote_streak`, `last_vote_date`, `badges` di `User` (migration `users/0008_user_gamification`). Poin +10 & streak bertambah saat vote (`users/gamification.award_vote`, dipanggil di `votes.views.perform_create`). Badge: `first_vote`, `streak_3/7/30`.
+- `GET /api/users/gamification/` → `{me, leaderboard, badges_meta}`. Flutter: `pages/gamification_page.dart`.
+
+> Setelah menambah field, jalankan: `python manage.py makemigrations users votes && python manage.py migrate`.
+
+---
+
+---
+
+## 7. Troubleshooting
 
 | Masalah | Solusi |
 |---------|--------|

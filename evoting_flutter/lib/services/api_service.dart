@@ -113,6 +113,16 @@ class ApiService {
     }
   }
 
+  /// GET publik TANPA header Authorization — untuk hasil/share yang boleh
+  /// diakses tanpa login (V7-A).
+  Future<http.Response> getPublic(String endpoint) async {
+    try {
+      return await http.get(_uri(endpoint));
+    } catch (e) {
+      return http.Response(jsonEncode({"error": e.toString()}), 500);
+    }
+  }
+
   Future<http.Response> post(String endpoint, Map<String, dynamic> data,
       [UserRole role = UserRole.netizen]) async {
     try {

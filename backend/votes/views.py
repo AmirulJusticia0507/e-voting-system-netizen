@@ -1,8 +1,8 @@
 from rest_framework import viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import SAFE_METHODS
+from rest_framework.permissions import SAFE_METHODS, AllowAny
 from django.db.models import Count, Sum
 from django.conf import settings
 from .models import Vote
@@ -123,6 +123,14 @@ class VoteViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(f"Gagal memicu WhatsApp notification: {e}")
 
+        # 🎮 V7-B3: poin + streak + badge
+        try:
+            from users.gamification import award_vote
+
+            award_vote(user)
+        except Exception as e:
+            print(f"Gagal update gamification: {e}")
+
 
     # 🔹 Rekap resmi (Ci.Cii) dengan tanda tangan digital
     @action(detail=False, methods=["get"])
@@ -176,6 +184,17 @@ class VoteViewSet(viewsets.ModelViewSet):
         from .results import all_evidence
 
         return Response({"evidence": all_evidence()})
+
+    # 🔹 Region battle — leaderboard partisipasi per wilayah
+    @action(detail=False, methods=["get"])
+    def regions(self, request):
+        from .results import region_leaderboard
+
+        election_id = request.query_params.get("election")
+        return Response({
+            "election_id": election_id,
+            "regions": region_leaderboard(int(election_id) if election_id else None),
+        })
 
 
     # 🔹 Rantai hash seluruh suara (bukti integritas)
@@ -267,3 +286,41 @@ class VoteViewSet(viewsets.ModelViewSet):
             })
 
         return Response(list(formatted.values()))
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# V7-A: HASIL & SHARE PUBLIK (tanpa login) — biar "keluar dari kotak WhatsApp"
+# ═══════════════════════════════════════════════════════════════════════════
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_results(request, topic_id):
+    """GET /api/votes/public/<id>/ — hasil topik + evidence, bisa dibuka tanpa login."""
+    from .results import topic_results, topic_evidence
+    from .sharing import topic_share_bundle
+
+    ev = topic_evidence(topic_id)
+    if ev.get("error"):
+        return Response({"detail": "topic_not_found"}, status=404)
+    return Response({
+        "topic": {
+            "id": ev.get("topic_id"),
+            "title": ev.get("topic_title"),
+        },
+        "total_votes": ev.get("total_votes"),
+        "evidence_root": ev.get("evidence_root"),
+        "candidates": ev.get("candidates", []),
+        "participation": topic_results(topic_id).get("participation_percent"),
+        "share": topic_share_bundle(topic_id, request),
+    })
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_share(request, topic_id):
+    """GET /api/votes/public/share/<id>/ — paket share (text + url + QR data)."""
+    from .sharing import topic_share_bundle
+
+    bundle = topic_share_bundle(topic_id, request)
+    if bundle is None:
+        return Response({"error": "topic_not_found"}, status=404)
+    return Response(bundle)

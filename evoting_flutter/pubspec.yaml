@@ -42,6 +42,11 @@ dependencies:
   # 🔹 Image Picker (📸 ambil foto dari kamera/galeri)
   image_picker: ^1.1.2
 
+  # 🔹 V7-A Sharing / QR (biar hasil bisa "keluar WA" & viral)
+  qr_flutter: ^4.1.0          # generate QR code
+  share_plus: ^9.0.0          # tombol share lintas platform (web/mobile)
+  mobile_scanner: ^5.2.3      # scan QR saat buka bukti/di lokasi
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

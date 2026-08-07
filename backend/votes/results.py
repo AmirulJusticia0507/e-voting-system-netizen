@@ -110,6 +110,46 @@ def all_evidence():
     return [topic_evidence(t.id) for t in Topic.objects.all()]
 
 
+def region_leaderboard(election_id=None):
+    """V7-B: Leaderboard partisipasi per-wilayah (region battle).
+    Ranking wilayah paling rame: jumlah DPT aktif vs suara masuk."""
+    from election.models import Region, VoterRegistration, ElectionPeriod
+    from .models import Vote
+    from topics.models import Topic
+
+    election = None
+    if election_id:
+        election = ElectionPeriod.objects.filter(pk=election_id).first()
+
+    topic_qs = Topic.objects.all()
+    if election:
+        topic_qs = topic_qs.filter(election=election)
+
+    reg_qs = VoterRegistration.objects.filter(is_active=True)
+    if election:
+        reg_qs = reg_qs.filter(election=election)
+
+    rows = []
+    for region in Region.objects.all():
+        reg_ids = list(
+            reg_qs.filter(region=region).values_list("user_id", flat=True)
+        )
+        dpt = len(reg_ids)
+        votes = Vote.objects.filter(user_id__in=reg_ids, topic__in=topic_qs).count() if dpt else 0
+        participation = round((votes / dpt) * 100, 2) if dpt else 0.0
+        rows.append({
+            "region_id": region.id,
+            "region_name": region.name,
+            "code": region.code,
+            "dpt": dpt,
+            "votes": votes,
+            "participation_percent": participation,
+        })
+
+    rows.sort(key=lambda r: (r["participation_percent"], r["votes"]), reverse=True)
+    return rows
+
+
 def recap():
     """Rekap resmi (gaya Ci.Cii): hasil per wilayah untuk tiap periode + total.
 

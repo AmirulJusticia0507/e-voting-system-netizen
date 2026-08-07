@@ -33,6 +33,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     is_netizen = models.BooleanField(default=False)
+
+    # ---- V7-B3: Gamification ----
+    points = models.IntegerField(default=0)
+    vote_streak = models.IntegerField(default=0)
+    last_vote_date = models.DateField(null=True, blank=True)
+    badges = models.JSONField(default=list, blank=True)
+
     roles = models.ForeignKey(
         "roles.Role",
         related_name="users",
