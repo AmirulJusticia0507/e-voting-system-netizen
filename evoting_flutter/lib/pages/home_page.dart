@@ -61,6 +61,7 @@ class _HomePageState extends State<HomePage> {
       {"title": "Scan QR Hasil", "icon": Icons.qr_code_scanner, "color": Colors.teal, "route": "/qr_scan"},
       {"title": "Region Battle", "icon": Icons.emoji_events, "color": Colors.deepOrange, "route": "/region_battle"},
       {"title": "Game & Poin", "icon": Icons.sports_esports, "color": Colors.amber, "route": "/gamification"},
+      {"title": "Papan Publik & Arsip", "icon": Icons.storefront, "color": Colors.indigo, "route": "/public_hub"},
       {"title": "Audit Trust", "icon": Icons.security, "color": Colors.lightBlue, "route": "/audit"},
       {"title": "Lihat Topik", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
       {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},

@@ -324,3 +324,66 @@ def public_share(request, topic_id):
     if bundle is None:
         return Response({"error": "topic_not_found"}, status=404)
     return Response(bundle)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_hub(request):
+    """GET /api/votes/public/hub/ — papan nama publik: semua periode + topik."""
+    from .publication import public_hub as hub_data
+
+    return Response({"periods": hub_data()})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_archive(request, election_id):
+    """GET /api/votes/public/archive/<election_id>/ — arsip periode terverifikasi."""
+    from .publication import election_archive
+
+    data = election_archive(election_id)
+    if data is None:
+        return Response({"detail": "election_not_found"}, status=404)
+    return Response(data)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def public_recap(request):
+    """GET /api/votes/public/recap/ — rekap global + tanda tangan, bisa diverifikasi
+    siapa pun (tanpa login) memakai public_key yang disertakan."""
+    from django.utils import timezone
+    from .results import recap as recap_data
+    from . import signature
+
+    elections = recap_data()
+    manifest = {
+        "type": "ci-cii_recap_public",
+        "generated_at": timezone.now().isoformat(),
+        "elections": elections,
+    }
+    return Response({
+        "manifest_hash": signature.manifest_hash(manifest),
+        "signature": signature.sign(manifest),
+        "public_key": signature.public_key_hex(),
+        "signature_algorithm": "ed25519",
+        "data": manifest,
+    })
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def public_recap_verify(request):
+    """POST /api/votes/public/recap/verify/ — verifikasi tanda tangan rekap tanpa login."""
+    from . import signature
+
+    data = request.data.get("data")
+    sig = request.data.get("signature")
+    pub = request.data.get("public_key")
+    if not all([data, sig, pub]):
+        return Response(
+            {"valid": False, "detail": "data, signature, public_key wajib ada."},
+            status=400,
+        )
+    ok = signature.verify(data, str(sig), str(pub))
+    return Response({"valid": ok})

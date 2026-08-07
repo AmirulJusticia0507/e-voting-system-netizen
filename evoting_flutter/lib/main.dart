@@ -23,6 +23,8 @@ import 'pages/public_results_page.dart';
 import 'pages/qr_scan_page.dart';
 import 'pages/region_battle_page.dart';
 import 'pages/gamification_page.dart';
+import 'pages/public_hub_page.dart';
+import 'pages/public_recap_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,6 +60,8 @@ class MyApp extends StatelessWidget {
         '/qr_scan': (context) => const QRScanPage(),
         '/region_battle': (context) => const RegionBattlePage(),
         '/gamification': (context) => const GamificationPage(),
+        '/public_hub': (context) => const PublicHubPage(),
+        '/public_recap': (context) => const PublicRecapPage(),
         '/public_results': (context) => const _PublicResultsRedirect(),
         '/topics': (context) => const TopicsPage(),
         '/profile': (context) => const ProfilePage(),
@@ -105,7 +109,10 @@ class RootGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (kIsWeb) {
-      final v = Uri.base.queryParameters['v'];
+      final q = Uri.base.queryParameters;
+      if (q.containsKey('hub')) return const PublicHubPage();
+      if (q.containsKey('recap')) return const PublicRecapPage();
+      final v = q['v'];
       if (v != null) {
         final id = int.tryParse(v);
         if (id != null) return PublicResultsPage(topicId: id);

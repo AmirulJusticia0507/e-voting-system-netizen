@@ -354,6 +354,14 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 
 ---
 
+### C. Layer trust/civic — hasil & arsip publik terverifikasi
+- `GET /api/votes/public/hub/` (AllowAny) — papan nama: semua periode + topik (evidence_root, total, DPT).
+- `GET /api/votes/public/archive/<election_id>/` (AllowAny) — arsip satu periode per-topik (hasil + evidence_root + partisipasi) ditandatangani Ed25519.
+- `GET /api/votes/public/recap/` + `POST /api/votes/public/recap/verify/` (AllowAny) — rekap global yang bisa diverifikasi siapa pun tanpa login.
+- Flutter: `pages/public_hub_page.dart` (daftar periode/topik → buka `public_results_page`), `pages/public_recap_page.dart` (verifikasi tandatangan). Dibuka tanpa login via link `?hub=1` / `?recap=1` di web (`RootGate`).
+
+---
+
 ---
 
 ## 7. Troubleshooting
