@@ -386,6 +386,78 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 
 ---
 
+### 6a. Catatan Setup di Ubuntu (Python 3.14)
+
+Diterapkan & diuji pada **Ubuntu 26.04, Python 3.14, PostgreSQL 18.4**. Hal-hal yang perlu diperhatikan:
+
+**1. Venv wajib (PEP 668) & butuh paket `venv`**
+Di Ubuntu, perintahnya `python3` (bukan `python`), dan instalasi pip lintas-environment ditolak
+(`externally-managed-environment`), jadi WAJIB venv. Jika `ensurepip` belum ada, install paket dulu:
+
+```bash
+sudo apt update
+sudo apt install -y python3.14-venv   # sesuaikan versi: python3-venv / python3.x-venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+**2. psycopg2 rusak di Python 3.14**
+`psycopg2-binary==2.9.9` tidak punya wheel untuk Python 3.14 → pip mencoba kompilasi dan gagal
+dengan `fatal error: libpq-fe.h: No such file or directory`. Solusi: pakai **psycopg3** yang
+sudah punya wheel resmi untuk 3.14 (sudah diset di `requirements.txt`):
+
+```env
+# requirements.txt
+psycopg[binary]==3.2.13    # ganti psycopg2-binary 2.9.9 di Python 3.14
+```
+
+`ENGINE` di settings tetap `django.db.backends.postgresql` (Django otomatis mengenali psycopg3).
+
+**3. Izin `schema public` (PostgreSQL 15+)**
+Sejak PostgreSQL 15, schema `public` hanya bisa diakses penuh oleh *owner database*. Jika user DB
+bukan `postgres` (misal `voting_user`), `migrate` akan gagal dengan
+`permission denied for schema public`. Solusi (jalankan sebagai superuser `postgres`):
+
+```bash
+sudo -u postgres psql \
+  -c "ALTER DATABASE e_voting OWNER TO voting_user;" \
+  -c "GRANT ALL ON SCHEMA public TO voting_user;"
+```
+
+Konfirmasi koneksi & izin `voting_user`:
+```sql
+SELECT rolname, has_schema_privilege('voting_user','public','CREATE TABLE') FROM pg_roles;
+```
+
+> `.env` harus cocok dengan user yang dibuat: `DB_USER=voting_user`, `DB_PASSWORD=password-db`.
+
+**4. Lihat data dari aplikasi GUI (Beekeeper Studio)**
+`e_voting` PostgreSQL bisa dibuka di Beekeeper Studio → *New Connection* → PostgreSQL:
+
+| Field       | Isi                |
+| ----------- | ------------------ |
+| Host        | `127.0.0.1`        |
+| Port        | `5432`             |
+| Database    | `e_voting`         |
+| Username    | `voting_user`      |
+| Password    | `password-db`      |
+
+**5. Flutter di Web (tanpa Android)**
+`flutter` di Ubuntu dipasang lewat snap klasik:
+
+```bash
+sudo snap install flutter --classic
+cd evoting_flutter
+flutter config --enable-web
+flutter pub get
+flutter run -d chrome      # atau -d web-server --web-port 8080
+```
+
+> Scanner QR (`mobile_scanner`) & biometrik (`local_auth`) hanya berjalan penuh di Android/iOS;
+> di Web fitur tersebut terbatas/tidak aktif — gunakan mode manual untuk share/OTP.
+
 ---
 
 ## 7. Troubleshooting
