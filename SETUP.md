@@ -96,11 +96,11 @@ python manage.py runserver 0.0.0.0:8000
 
 **Role & Permission dibuat otomatis** lewat migrasi `roles.0001` dan di-backfill ke user lama lewat `roles.0002`:
 
-| Role | is_staff / is_superuser | Permission default |
-|------|--------------------------|--------------------|
-| `superadmin` | superuser = true | Semua (9) permission |
-| `admin` | is_staff=true | manage_users, manage_topics, manage_candidates, manage_votes, manage_comments, view_results, comment |
-| `netizen` | is_staff=false | vote, comment, view_results |
+| Role           | is_staff / is_superuser | Permission default                                                                                   |
+| -------------- | ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| `superadmin` | superuser = true        | Semua (9) permission                                                                                 |
+| `admin`      | is_staff=true           | manage_users, manage_topics, manage_candidates, manage_votes, manage_comments, view_results, comment |
+| `netizen`    | is_staff=false          | vote, comment, view_results                                                                          |
 
 Daftar `Permission` yang disematkan:
 `manage_users`, `manage_topics`, `manage_candidates`, `manage_votes`,
@@ -118,6 +118,7 @@ daphne -b 0.0.0.0 -p 8000 core.asgi:application
 ```
 
 Endpoint WebSocket: `ws://<host>:8000/ws/votes/<topic_id>/`
+
 - Consumer: `votes/consumers.py`, routing: `votes/routing.py`.
 - Broadcast tiap suara baru: `votes/signals.py` (best-effort; bila Redis off, REST tetap normal & login tak masalah).
 - Fallback REST: `GET /api/votes/stats/` (rekap + partisipasi semua topik).
@@ -135,12 +136,12 @@ flutter pub get
 
 `lib/services/api_service.dart` menentukan `baseUrl` otomatis saat ini:
 
-| Platform | URL |
-|----------|-----|
-| Web / desktop | `http://localhost:8000/api` |
-| Android emulator | `http://10.0.2.2:8000/api` |
-| iOS simulator | `http://localhost:8000/api` |
-| Device fisik | sesuaikan manual ke IP LAN server |
+| Platform         | URL                               |
+| ---------------- | --------------------------------- |
+| Web / desktop    | `http://localhost:8000/api`     |
+| Android emulator | `http://10.0.2.2:8000/api`      |
+| iOS simulator    | `http://localhost:8000/api`     |
+| Device fisik     | sesuaikan manual ke IP LAN server |
 
 ### 3b. Jalankan
 
@@ -163,29 +164,29 @@ flutter run -d <device-id>   # Android/iOS
 
 Semua endpoint `/api/*` memakai permission default DRF `AllowAny`, namun **viewset** yang terkurasi kini menerapkan kelas permission sendiri. Ringkasan:
 
-| Endpoint | Metode baca (GET) | Metode tulis (POST/PUT/PATCH/DELETE) |
-|----------|-------------------|---------------------------------------|
-| `/api/users/` | butuh login | butuh `manage_users` |
-| `/api/users/me/` | butuh login | butuh login |
-| `/api/users/<id>/set_role/` | — | butuh `manage_users` |
-| `/api/roles/` `permissions/` | butuh login | butuh `manage_roles` |
-| `/api/topics/` | semua | butuh `manage_topics` |
-| `/api/candidates/` | semua | butuh `manage_candidates` |
-| `/api/votes/` | butuh login | butuh `vote` (netizen) |
-| `/api/votes/results/` | butuh login | — |
-| `/api/votes/chain/` | butuh login | status integritas seluruh rantai suara |
-| `/api/votes/<id>/verify/` | — | butuh login (POST; cek hash & dekripsi) |
-| `/api/comments/` | semua | butuh `comment` (delete/Apabila hanya pemilik atau `manage_comments`) |
-| `/api/auth/admin-login/`, `/api/token/`, `/api/netizens/signup/` | — | public |
-| `/api/auth/otp/request/` | — | public (kirim kode OTP ke HP) |
-| `/api/auth/otp/verify/` | — | public (verifikasi + beri token) |
-| `/api/elections/` | butuh login | butuh `manage_elections` |
-| `/api/elections/<id>/voters/` | GET butuh `manage_elections` | POST butuh `manage_elections` (daftar/matiin DPT) |
-| `/api/elections/<id>/remove_voter/` | — | POST butuh `manage_elections` |
-| `/api/elections/regions/` | butuh login | butuh `manage_elections` |
-| `/api/votes/stats/` | butuh login | — (rekap + partisipasi semua topik) |
-| `/api/votes/recap/` | butuh login | — (rekap resmi ter-tanda tangan) |
-| `/api/votes/recap/verify/` | — | POST `{data, signature, public_key}` → `{valid}` |
+| Endpoint                                                               | Metode baca (GET)             | Metode tulis (POST/PUT/PATCH/DELETE)                                     |
+| ---------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------ |
+| `/api/users/`                                                        | butuh login                   | butuh`manage_users`                                                    |
+| `/api/users/me/`                                                     | butuh login                   | butuh login                                                              |
+| `/api/users/<id>/set_role/`                                          | —                            | butuh`manage_users`                                                    |
+| `/api/roles/` `permissions/`                                       | butuh login                   | butuh`manage_roles`                                                    |
+| `/api/topics/`                                                       | semua                         | butuh`manage_topics`                                                   |
+| `/api/candidates/`                                                   | semua                         | butuh`manage_candidates`                                               |
+| `/api/votes/`                                                        | butuh login                   | butuh`vote` (netizen)                                                  |
+| `/api/votes/results/`                                                | butuh login                   | —                                                                       |
+| `/api/votes/chain/`                                                  | butuh login                   | status integritas seluruh rantai suara                                   |
+| `/api/votes/<id>/verify/`                                            | —                            | butuh login (POST; cek hash & dekripsi)                                  |
+| `/api/comments/`                                                     | semua                         | butuh`comment` (delete/Apabila hanya pemilik atau `manage_comments`) |
+| `/api/auth/admin-login/`, `/api/token/`, `/api/netizens/signup/` | —                            | public                                                                   |
+| `/api/auth/otp/request/`                                             | —                            | public (kirim kode OTP ke HP)                                            |
+| `/api/auth/otp/verify/`                                              | —                            | public (verifikasi + beri token)                                         |
+| `/api/elections/`                                                    | butuh login                   | butuh`manage_elections`                                                |
+| `/api/elections/<id>/voters/`                                        | GET butuh`manage_elections` | POST butuh`manage_elections` (daftar/matiin DPT)                       |
+| `/api/elections/<id>/remove_voter/`                                  | —                            | POST butuh`manage_elections`                                           |
+| `/api/elections/regions/`                                            | butuh login                   | butuh`manage_elections`                                                |
+| `/api/votes/stats/`                                                  | butuh login                   | — (rekap + partisipasi semua topik)                                     |
+| `/api/votes/recap/`                                                  | butuh login                   | — (rekap resmi ter-tanda tangan)                                        |
+| `/api/votes/recap/verify/`                                           | —                            | POST`{data, signature, public_key}` → `{valid}`                     |
 
 ### Alur logis penugasan role
 
@@ -210,13 +211,13 @@ Dipakai oleh kelas permission DRF di `roles/permissions.py`.
 
 Setiap `Vote` kini berlapis:
 
-| Field | Fungsi |
-|-------|--------|
-| `previous_hash` | hash suara sebelumnya (membentuk **chain**) |
-| `integrity_hash` | HMAC-SHA256 dari `prev_hash \| candidate_id \| nonce` |
-| `nonce` | nilai acak agar dua suara berbeda punya hash berbeda |
-| `encrypted_choice` | `candidate_id` dienkripsi **AES-256-GCM** |
-| `verifiable` | True jika keempat kolom integritas terisi |
+| Field                | Fungsi                                               |
+| -------------------- | ---------------------------------------------------- |
+| `previous_hash`    | hash suara sebelumnya (membentuk**chain**)     |
+| `integrity_hash`   | HMAC-SHA256 dari`prev_hash \| candidate_id \| nonce` |
+| `nonce`            | nilai acak agar dua suara berbeda punya hash berbeda |
+| `encrypted_choice` | `candidate_id` dienkripsi **AES-256-GCM**    |
+| `verifiable`       | True jika keempat kolom integritas terisi            |
 
 Cara verifikasi: `POST /api/votes/<id>/verify/` (hitung ulang hash & dekripsi), dan
 `GET /api/votes/chain/` (daftar `link_valid` per suara + `chain_valid` global).
@@ -227,26 +228,28 @@ Kunci pemakaian: `VOTE_ENCRYPTION_KEY` di `.env`.
 
 Memastikan pemilih benar-benar pemilik nomor sebelum bisa memilih.
 
-| Endpoint | Fungsi |
-|----------|--------|
-| `POST /api/auth/otp/request/` `{phone_number}` | generate + kirim kode 6 digit (WhatsApp), TTL **10 menit**. Di mode `DEBUG` response menyertakan `dev_otp` untuk tes. |
-| `POST /api/auth/otp/verify/` `{phone_number, otp}` | valid kode → `is_verified=True`, balas refresh/access token + user. |
+| Endpoint                                               | Fungsi                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/auth/otp/request/` `{phone_number}`     | generate + kirim kode 6 digit (WhatsApp), TTL**10 menit**. Di mode `DEBUG` response menyertakan `dev_otp` untuk tes. |
+| `POST /api/auth/otp/verify/` `{phone_number, otp}` | valid kode →`is_verified=True`, balas refresh/access token + user.                                                          |
 
 Logika:
+
 - Field: `users.User.otp_code`, `users.User.otp_expires_at`.
 - Implementasi: `users/otp.py`, view di `users/views.py`.
 - **Enforcement**: `votes/views.py` menolak voting jika `user.is_verified=False`.
 
 ### 5d. Multi-Periode, Wilayah & DPT (V3)
 
-| Model | Peran |
-|-------|-------|
-| `election.Region` | Wilayah (nama + kode), mis. provinsi/kabupaten |
-| `election.ElectionPeriod` | Periode pemilihan dengan `start_at`/`end_at` & `is_active` (bisa berjalan bersamaan) |
-| `election.VoterRegistration` | **DPT** — pemilih terdaftar sah pada suatu periode (`unique(user, election)`) |
-| `topics.Topic` | kini punya `election` & `region` (nullable; kosong = legacy/nasional) |
+| Model                          | Peran                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `election.Region`            | Wilayah (nama + kode), mis. provinsi/kabupaten                                            |
+| `election.ElectionPeriod`    | Periode pemilihan dengan`start_at`/`end_at` & `is_active` (bisa berjalan bersamaan) |
+| `election.VoterRegistration` | **DPT** — pemilih terdaftar sah pada suatu periode (`unique(user, election)`)    |
+| `topics.Topic`               | kini punya`election` & `region` (nullable; kosong = legacy/nasional)                  |
 
 Enforcement di `votes/views.py` (di atas semua cek V2):
+
 - Periode harus aktif & `now ∈ [start_at, end_at]`.
 - Pemilih harus ada di DPT periode tersebut & `is_active=True`.
 - Bila `topic.region` dan `reg.region` terisi, keduanya harus sama.
@@ -335,6 +338,7 @@ untuk transparansi tanpa membocorkan detail suara.
 Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Korea:
 
 ### A. Share & QR (transparansi publik, tanpa login)
+
 - `GET /api/votes/public/<topic_id>/` (AllowAny) — hasil topik + `evidence_root` + share payload.
 - `GET /api/votes/public/share/<topic_id>/` (AllowAny) — `share_url`, `share_text`, ringkasan (untuk QR/tombol share).
 - Setting `PUBLIC_BASE_URL` di `.env` menentukan domain link share (produksi: domain web Flutter).
@@ -345,6 +349,7 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 - `share_plus`, `qr_flutter`, `mobile_scanner` sudah ditambahkan ke `pubspec.yaml` → jalankan `flutter pub get`.
 
 ### B. Live ranking flash + Region Battle + Gamification
+
 - **Live ranking flash**: halaman `live_results_page.dart` kini mengurutkan kandidat secara live dengan animasi bar & badge naik/turun (▴/▾) tiap snapshot WebSocket.
 - **Region Battle**: `GET /api/votes/regions/` → `region_leaderboard()` (partisipasi per wilayah). Flutter: `pages/region_battle_page.dart`.
 - **Gamifikasi**: field `points`, `vote_streak`, `last_vote_date`, `badges` di `User` (migration `users/0008_user_gamification`). Poin +10 & streak bertambah saat vote (`users/gamification.award_vote`, dipanggil di `votes.views.perform_create`). Badge: `first_vote`, `streak_3/7/30`.
@@ -355,6 +360,7 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 ---
 
 ### C. Layer trust/civic — hasil & arsip publik terverifikasi
+
 - `GET /api/votes/public/hub/` (AllowAny) — papan nama: semua periode + topik (evidence_root, total, DPT).
 - `GET /api/votes/public/archive/<election_id>/` (AllowAny) — arsip satu periode per-topik (hasil + evidence_root + partisipasi) ditandatangani Ed25519.
 - `GET /api/votes/public/recap/` + `POST /api/votes/public/recap/verify/` (AllowAny) — rekap global yang bisa diverifikasi siapa pun tanpa login.
@@ -384,12 +390,12 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 
 ## 7. Troubleshooting
 
-| Masalah | Solusi |
-|---------|--------|
-| `No module named 'django'` | buang `backend/venv` lama, buat ulang, `pip install -r requirements.txt` |
-| Migration `roles` tak ada | pastikan `roles` terdaftar di `INSTALLED_APPS` lalu `python manage.py migrate` |
-| 403 saat kelola role/user | pastikan role user = `superadmin`/`admin` & punya permission yang dimaksud |
-| `ModuleNotFoundError: cryptography` | `pip install cryptography` (sudah di `requirements.txt`) |
-| OTP tak terkirim | isi `WA_GATEWAY_TOKEN` di `.env` (tanpa token otomatis mode simulasi/log) |
-| Fingerprint nonaktif di Web | wajar — `local_auth` hanya Android/iOS |
-| WebSocket/ASGI error `apps.votes.routing` | sudah diperbaiki; jalankan dengan `daphne` |
+| Masalah                                    | Solusi                                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------------- |
+| `No module named 'django'`               | buang`backend/venv` lama, buat ulang, `pip install -r requirements.txt`         |
+| Migration`roles` tak ada                 | pastikan`roles` terdaftar di `INSTALLED_APPS` lalu `python manage.py migrate` |
+| 403 saat kelola role/user                  | pastikan role user =`superadmin`/`admin` & punya permission yang dimaksud       |
+| `ModuleNotFoundError: cryptography`      | `pip install cryptography` (sudah di `requirements.txt`)                        |
+| OTP tak terkirim                           | isi`WA_GATEWAY_TOKEN` di `.env` (tanpa token otomatis mode simulasi/log)        |
+| Fingerprint nonaktif di Web                | wajar —`local_auth` hanya Android/iOS                                            |
+| WebSocket/ASGI error`apps.votes.routing` | sudah diperbaiki; jalankan dengan`daphne`                                         |
