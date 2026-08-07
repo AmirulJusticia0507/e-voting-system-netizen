@@ -173,14 +173,30 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 8),
                   Chip(
                     label: Text(
-                      (user!['is_staff'] == true || user!['is_superuser'] == true)
-                          ? "Administrator"
-                          : "Netizen Voter",
+                      (user!['role_name']?.toString().isNotEmpty == true)
+                          ? "Role: ${user!['role_name']}"
+                          : ((user!['is_staff'] == true || user!['is_superuser'] == true)
+                              ? "Role: Administrator"
+                              : "Role: Netizen Voter"),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                     backgroundColor: (user!['is_staff'] == true || user!['is_superuser'] == true)
                         ? Colors.red.shade400
                         : Colors.green.shade400,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: (user?['permission_codes'] as List<dynamic>? ?? [])
+                        .map((c) => Chip(
+                              label: Text(
+                                c.toString().replaceAll('_', ' '),
+                                style: const TextStyle(fontSize: 11),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                            ))
+                        .toList(),
                   ),
                   const Divider(height: 40),
                   Align(

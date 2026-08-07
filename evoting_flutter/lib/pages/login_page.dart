@@ -122,8 +122,15 @@ class _LoginPageState extends State<LoginPage> {
       if (didAuth) {
         final token = await storage.read(key: "access_token");
         if (token != null) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const HomePage()));
+          final role = await storage.read(key: "user_role");
+          if (!mounted) return;
+          if (role == "admin") {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => const HomePage()));
+          } else {
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const NetizenMenuPage()));
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content:

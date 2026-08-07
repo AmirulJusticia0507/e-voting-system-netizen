@@ -47,22 +47,33 @@ class _HomePageState extends State<HomePage> {
 
     final isSuperadmin = (user?['is_staff'] == true || user?['is_superuser'] == true);
 
+    // Daftar permission dari user (hasil /users/me/)
+    final List<dynamic> perms = (user?['permission_codes'] ?? []) as List<dynamic>;
+    List<String> perm = perms.map((e) => e.toString()).toList();
+    bool has(String code) => isSuperadmin ? true : perm.contains(code);
 
-    // Menu khusus netizen
+    // Menu khusus netizen (voter)
     final netizenMenu = [
       {"title": "Mulai Voting", "icon": Icons.how_to_vote, "color": Colors.deepPurple, "route": "/voting"},
       {"title": "Lihat Hasil", "icon": Icons.bar_chart, "color": Colors.green, "route": "/results"},
+      {"title": "Hasil Realtime", "icon": Icons.sensors, "color": Colors.cyan, "route": "/live_results"},
+      {"title": "Rekap Resmi", "icon": Icons.verified, "color": Colors.indigo, "route": "/recap"},
+      {"title": "Audit Trust", "icon": Icons.security, "color": Colors.lightBlue, "route": "/audit"},
       {"title": "Lihat Topik", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
       {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
     ];
 
-    // Menu khusus superadmin
-    final adminMenu = [
-      {"title": "Kelola User", "icon": Icons.people, "color": Colors.red, "route": "/manage_users"},
-      {"title": "Kelola Topik", "icon": Icons.topic, "color": Colors.blue, "route": "/manage_topics"},
-      {"title": "Kelola Kandidat", "icon": Icons.person_pin, "color": Colors.teal, "route": "/manage_candidates"},
-      {"title": "Kelola Votes", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/manage_votes"},
-      {"title": "Kelola Komentar", "icon": Icons.comment, "color": Colors.indigo, "route": "/manage_comments"},
+    // Menu admin berbasis permission
+    final adminMenu = <Map<String, dynamic>>[
+      if (has("manage_users")) {"title": "Kelola User", "icon": Icons.people, "color": Colors.red, "route": "/manage_users"},
+      if (has("manage_topics")) {"title": "Kelola Topik", "icon": Icons.topic, "color": Colors.blue, "route": "/manage_topics"},
+      if (has("manage_candidates")) {"title": "Kelola Kandidat", "icon": Icons.person_pin, "color": Colors.teal, "route": "/manage_candidates"},
+      if (has("manage_votes")) {"title": "Kelola Votes", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/manage_votes"},
+      if (has("manage_comments")) {"title": "Kelola Komentar", "icon": Icons.comment, "color": Colors.indigo, "route": "/manage_comments"},
+      if (has("manage_roles")) {"title": "Kelola Role & Izin", "icon": Icons.admin_panel_settings, "color": Colors.brown, "route": "/manage_roles"},
+      if (has("manage_elections")) {"title": "Kelola Pemilihan", "icon": Icons.event_note, "color": Colors.deepOrange, "route": "/manage_elections"},
+      if (has("manage_elections")) {"title": "Kelola Wilayah", "icon": Icons.map, "color": Colors.teal, "route": "/manage_regions"},
+      {"title": "Audit Trust", "icon": Icons.security, "color": Colors.lightBlue, "route": "/audit"},
       {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
     ];
 

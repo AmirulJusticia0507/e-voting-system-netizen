@@ -19,7 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from rest_framework_simplejwt.views import TokenRefreshView
-from users.views import AdminLoginView, PhoneTokenObtainPairView
+from users.views import AdminLoginView, PhoneTokenObtainPairView, RequestOTPView, VerifyOTPView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -29,10 +29,15 @@ urlpatterns = [
     path("api/candidates/", include("candidates.urls")),
     path("api/votes/", include("votes.urls")),
     path("api/comments/", include("comments.urls")),
+    path("api/roles/", include("roles.urls")),
+    path("api/elections/", include("election.urls")),
+    path("api/audit/", include("audit.urls")),
     path("dashboard/", include("dashboard.urls")),
 
     # 🔑 Auth endpoints
     path("api/auth/admin-login/", AdminLoginView.as_view(), name="admin_login"),
+    path("api/auth/otp/request/", RequestOTPView.as_view(), name="otp_request"),
+    path("api/auth/otp/verify/", VerifyOTPView.as_view(), name="otp_verify"),
     path("api/token/", PhoneTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 ]

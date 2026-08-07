@@ -22,6 +22,9 @@ dependencies:
   http: ^1.1.0
   dio: ^5.7.0
 
+  # 🔹 Realtime (WebSocket live voting results)
+  web_socket_channel: ^3.0.1
+
   # 🔹 State Management
   provider: ^6.1.1
 

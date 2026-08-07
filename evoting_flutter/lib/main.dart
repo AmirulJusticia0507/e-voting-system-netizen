@@ -14,6 +14,11 @@ import 'pages/candidates_page.dart';
 import 'pages/comments_page.dart';
 import 'pages/profile_page.dart';
 import 'pages/admin_manage_pages.dart';
+import 'pages/roles_manage_pages.dart';
+import 'pages/election_manage_pages.dart';
+import 'pages/live_results_page.dart';
+import 'pages/recap_page.dart';
+import 'pages/audit_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +48,9 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const NetizenMenuPage(),
         '/voting': (context) => VotingPage(),
         '/results': (context) => const ResultsPage(),
+        '/live_results': (context) => const LiveResultsPage(),
+        '/recap': (context) => const RecapPage(),
+        '/audit': (context) => const AuditPage(),
         '/topics': (context) => const TopicsPage(),
         '/profile': (context) => const ProfilePage(),
         '/manage_users': (context) => const ManageUsersPage(),
@@ -50,6 +58,9 @@ class MyApp extends StatelessWidget {
         '/manage_candidates': (context) => const ManageCandidatesPage(),
         '/manage_votes': (context) => const ManageVotesPage(),
         '/manage_comments': (context) => const ManageCommentsPage(),
+        '/manage_roles': (context) => const ManageRolesPage(),
+        '/manage_elections': (context) => const ManageElectionsPage(),
+        '/manage_regions': (context) => const ManageRegionsPage(),
       },
 
       onGenerateRoute: (settings) {

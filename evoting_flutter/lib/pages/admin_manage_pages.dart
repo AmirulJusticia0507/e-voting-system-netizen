@@ -14,6 +14,7 @@ class ManageUsersPage extends StatefulWidget {
 class _ManageUsersPageState extends State<ManageUsersPage> {
   final api = ApiService();
   List<dynamic> users = [];
+  List<dynamic> roles = [];
   bool isLoading = true;
 
   @override
@@ -24,15 +25,97 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
 
   Future<void> fetchUsers() async {
     setState(() => isLoading = true);
-    final res = await api.get("users/");
+    final res = await api.get("users/", UserRole.admin);
+    final resRoles = await api.get("roles/", UserRole.admin);
     if (res.statusCode == 200) {
       setState(() {
         users = jsonDecode(res.body);
+        if (resRoles.statusCode == 200) roles = jsonDecode(resRoles.body);
         isLoading = false;
       });
     } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Gagal load users: ${res.body}")),
+        );
+      }
       setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _assignRole(Map<String, dynamic> u) async {
+    int? current = u['role'];
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Tugaskan Role"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<int>(
+                isExpanded: true,
+                value: current,
+                hint: const Text("Pilih Role"),
+                items: roles.map<DropdownMenuItem<int>>((r) {
+                  return DropdownMenuItem<int>(value: r['id'], child: Text(r['name'] ?? ''));
+                }).toList(),
+                onChanged: (val) => setDialogState(() => current = val),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+            ElevatedButton(
+              onPressed: () async {
+                if (current == null) return;
+                final res = await api.post("users/${u['id']}/set_role/", {"role": current}, UserRole.admin);
+                Navigator.pop(ctx);
+                if (res.statusCode == 200) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Role diperbarui.")),
+                  );
+                  fetchUsers();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Gagal: ${res.body}")),
+                  );
+                }
+              },
+              child: const Text("Simpan"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteUser(Map<String, dynamic> u) async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Hapus User"),
+        content: Text("Hapus akun '${u['username'] ?? u['phone_number']}'?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final res = await api.delete("users/${u['id']}/", UserRole.admin);
+              if (res.statusCode == 204 || res.statusCode == 200) {
+                fetchUsers();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Gagal hapus: ${res.body}")),
+                );
+              }
+            },
+            child: const Text("Hapus"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -46,11 +129,30 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
               itemCount: users.length,
               itemBuilder: (context, i) {
                 final u = users[i];
+                final roleName = u['role_name'] ?? '';
+                final isStaff = u['is_staff'] == true || u['is_superuser'] == true;
                 return Card(
                   child: ListTile(
                     leading: const CircleAvatar(child: Icon(Icons.person)),
                     title: Text(u['username'] ?? u['phone_number'] ?? 'User'),
-                    subtitle: Text("Phone: ${u['phone_number']} | Staff: ${u['is_staff']}"),
+                    subtitle: Text(
+                      "Phone: ${u['phone_number']}\nRole: ${roleName.isEmpty ? (isStaff ? 'admin' : 'netizen') : roleName}",
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
+                          tooltip: "Tugaskan Role",
+                          onPressed: () => _assignRole(u),
+                        ),
+                        if (u['role_name'] != 'superadmin' && u['is_superuser'] == false)
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _deleteUser(u),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               },

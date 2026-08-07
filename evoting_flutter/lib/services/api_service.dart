@@ -91,6 +91,15 @@ class ApiService {
   Uri _uri(String endpoint) =>
       Uri.parse(endpoint.startsWith("http") ? endpoint : "$baseUrl/$endpoint");
 
+  /// URL WebSocket untuk live hasil topik (dari baseUrl HTTP → ws).
+  String wsUrl(int topicId) {
+    final raw = baseUrl.endsWith("/api") ? baseUrl.substring(0, baseUrl.length - 4) : baseUrl;
+    final wsBase = raw.startsWith("https")
+        ? raw.replaceFirst("https", "wss")
+        : raw.replaceFirst("http", "ws");
+    return "$wsBase/ws/votes/$topicId/";
+  }
+
   /// ================== HTTP METHODS ==================
   Future<http.Response> get(String endpoint,
       [UserRole role = UserRole.netizen]) async {
@@ -124,6 +133,18 @@ class ApiService {
         _uri(endpoint),
         headers: await _headers(role),
         body: jsonEncode(data),
+      );
+    } catch (e) {
+      return http.Response(jsonEncode({"error": e.toString()}), 500);
+    }
+  }
+
+  Future<http.Response> delete(String endpoint,
+      [UserRole role = UserRole.netizen]) async {
+    try {
+      return await http.delete(
+        _uri(endpoint),
+        headers: await _headers(role),
       );
     } catch (e) {
       return http.Response(jsonEncode({"error": e.toString()}), 500);

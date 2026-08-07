@@ -53,6 +53,9 @@ INSTALLED_APPS = [
     'votes',
     'comments',
     'dashboard',
+    'roles',
+    'election',
+    'audit',
 ]
 
 MIDDLEWARE = [
@@ -198,4 +201,21 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # =============================================================================
 WA_GATEWAY_URL = os.getenv("WA_GATEWAY_URL", "https://api.fonnte.com/send")
 WA_GATEWAY_TOKEN = os.getenv("WA_GATEWAY_TOKEN", None)
+
+# =============================================================================
+# 🔐 Vote Integrity / Encryption
+# Wajib diganti nilai aman di produksi (64+ karakter acak) lewat .env.
+# Dipakai AuthMiddleware untuk derive AES key & HMAC chain hash suara.
+# =============================================================================
+VOTE_ENCRYPTION_KEY = os.getenv(
+    "VOTE_ENCRYPTION_KEY",
+    "DEV_ONLY_CHANGE_ME_v1_5b41c9-3f7e-4a82-9c01-8d6e2f0a1b2c",
+)
+
+# Aktifkan broadcast real-time (WebSocket) saat suara baru masuk.
+VOTE_BROADCAST = os.getenv("VOTE_BROADCAST", "True") == "True"
+
+# Kunci tanda tangan Ed25519 untuk Rekap Resmi (Ci.Cii).
+# Kosongkan agar memakai SECRET_KEY (hanya untuk development).
+RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
 
