@@ -13,6 +13,8 @@ from .services import send_whatsapp_vote_notification
 from roles.permissions import (
     IsNetizenVoter,
     HasPermission,
+    ManageVotesPermission,
+    ManageUsersPermission,
 )
 
 
@@ -45,6 +47,23 @@ def _eligibility_error(user, topic):
 
 def _secret():
     return settings.VOTE_ENCRYPTION_KEY
+
+
+def _csv_response(filename, headers, rows):
+    """Bangun StreamingHttpResponse CSV dengan BOM (biar rapi di Excel)."""
+    import csv
+    import io
+    from django.http import HttpResponse
+
+    buf = io.StringIO()
+    buf.write("\ufeff")  # BOM agar Chinese/Excel menampilkan UTF-8 benar
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    for row in rows:
+        writer.writerow([("" if v is None else v) for v in row])
+    response = HttpResponse(buf.getvalue(), content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 class VoteViewSet(viewsets.ModelViewSet):
@@ -195,6 +214,94 @@ class VoteViewSet(viewsets.ModelViewSet):
             "election_id": election_id,
             "regions": region_leaderboard(int(election_id) if election_id else None),
         })
+
+    # 🔹 Analytics (admin) — ringkasan & tren untuk dashboard
+    @action(detail=False, methods=["get"], permission_classes=[ManageVotesPermission])
+    def analytics(self, request):
+        from django.utils import timezone
+        from .results import region_leaderboard, all_results
+        from django.db.models.functions import TruncDate
+
+        all_data = all_results()
+        total_votes = sum(t.get("total_votes", 0) for t in all_data if t.get("topic_id"))
+
+        # tren voting per 7 hari terakhir
+        since = timezone.now() - timezone.timedelta(days=7)
+        trend = list(
+            Vote.objects.filter(created_at__gte=since)
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
+        regions = region_leaderboard(None)
+
+        return Response({
+            "total_votes": total_votes,
+            "total_topics": len(all_data),
+            "trend_days": [
+                {"date": r["day"].isoformat(), "count": r["count"]} for r in trend
+            ],
+            "top_regions": regions[:5],
+            "per_period": [
+                {
+                    "election_id": t.get("topic_id"),
+                    "title": t.get("topic_title"),
+                    "total_votes": t.get("total_votes", 0),
+                    "participation_percent": t.get("participation_percent"),
+                }
+                for t in all_data
+            ],
+        })
+
+    # 🔹 Ekspor CSV: hasil per kandidat (admin)
+    @action(detail=False, methods=["get"], permission_classes=[ManageVotesPermission])
+    def export_results(self, request):
+        import csv
+        from django.http import StreamingHttpResponse
+
+        rows = (
+            Vote.objects
+            .values("topic__title", "candidate__name")
+            .annotate(votes=Count("id"))
+            .order_by("topic__title", "-votes")
+        )
+        return _csv_response(
+            "hasil.csv",
+            ["Topik", "Kandidat", "Jumlah Suara"],
+            [[r["topic__title"], r["candidate__name"], r["votes"]] for r in rows],
+        )
+
+    # ⚙️ Ekspor CSV: riwayat suara (admin)
+    @action(detail=False, methods=["get"], permission_classes=[ManageVotesPermission])
+    def export_votes(self, request):
+        rows = Vote.objects.order_by("id").values(
+            "id", "user__phone_number", "topic__id", "topic__title",
+            "candidate__id", "candidate__name", "created_at",
+        )
+        return _csv_response(
+            "riwayat_suara.csv",
+            ["id", "pemilih", "topic_id", "topic", "kandidat_id", "kandidat", "waktu"],
+            [[r["id"], r["user__phone_number"], r["topic__id"], r["topic__title"],
+              r["candidate__id"], r["candidate__name"], r["created_at"]] for r in rows],
+        )
+
+    # ⚙️ Ekspor CSV: log audit (admin)
+    @action(detail=False, methods=["get"], permission_classes=[ManageUsersPermission])
+    def export_audit(self, request):
+        from audit.models import AuditLog
+
+        rows = AuditLog.objects.order_by("-id").values(
+            "id", "timestamp", "actor__phone_number", "action",
+            "target_type", "target_pk", "ip_address",
+        )
+        return _csv_response(
+            "audit_log.csv",
+            ["id", "waktu", "aktor", "aksi", "tipe_target", "target_pk", "ip"],
+            [[r["id"], r["timestamp"], r["actor__phone_number"], r["action"],
+              r["target_type"], r["target_pk"], r["ip_address"]] for r in rows],
+        )
 
 
     # 🔹 Rantai hash seluruh suara (bukti integritas)

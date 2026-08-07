@@ -40,6 +40,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_vote_date = models.DateField(null=True, blank=True)
     badges = models.JSONField(default=list, blank=True)
 
+    # Push notification (FCM) token — diisi dari perangkat Flutter.
+    fcm_token = models.CharField(max_length=255, blank=True, default="")
+
     roles = models.ForeignKey(
         "roles.Role",
         related_name="users",

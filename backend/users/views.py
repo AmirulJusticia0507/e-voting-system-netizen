@@ -90,7 +90,7 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(list(roles))
 
     # 🎮 V7-B3: profil gamification user yang login
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
     def gamification(self, request):
         from .gamification import user_gamification, leaderboard
 
@@ -104,6 +104,18 @@ class UserViewSet(viewsets.ModelViewSet):
                 "streak_30": {"label": "Sebulan Loyal", "icon": "👑"},
             },
         })
+
+    # 📲 Daftarkan / ambil token push FCM dari perangkat Flutter
+    @action(detail=False, methods=["get", "post"], permission_classes=[IsAuthenticated])
+    def fcm(self, request):
+        if request.method == "POST":
+            token = str(request.data.get("token", "")).strip()
+            if not token:
+                return Response({"detail": "token wajib ada."}, status=400)
+            request.user.fcm_token = token
+            request.user.save(update_fields=["fcm_token"])
+            return Response({"ok": True, "token": token})
+        return Response({"token": request.user.fcm_token or ""})
 
 
 

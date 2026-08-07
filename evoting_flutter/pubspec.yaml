@@ -42,10 +42,14 @@ dependencies:
   # 🔹 Image Picker (📸 ambil foto dari kamera/galeri)
   image_picker: ^1.1.2
 
-  # 🔹 V7-A Sharing / QR (biar hasil bisa "keluar WA" & viral)
+  # 🔹 V7 Sharing / QR (biar hasil bisa "keluar WA" & viral)
   qr_flutter: ^4.1.0          # generate QR code
   share_plus: ^9.0.0          # tombol share lintas platform (web/mobile)
   mobile_scanner: ^5.2.3      # scan QR saat buka bukti/di lokasi
+
+  # 🔹 Final batch: export file & push notif
+  path_provider: ^2.1.3       # simpan CSV di storage device
+  firebase_messaging: ^14.9.4 # push notification FCM
 
 dev_dependencies:
   flutter_test:

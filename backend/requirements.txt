@@ -22,6 +22,9 @@ twilio==9.2.3
 # Vote integrity / encryption
 cryptography==43.0.1
 
+# Push notification FCM
+requests==2.32.3
+
 # Dev & Testing
 pytest==8.3.3
 pytest-django==4.8.0

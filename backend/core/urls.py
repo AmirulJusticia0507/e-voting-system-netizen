@@ -32,6 +32,7 @@ urlpatterns = [
     path("api/roles/", include("roles.urls")),
     path("api/elections/", include("election.urls")),
     path("api/audit/", include("audit.urls")),
+    path("api/notifications/", include("notifications.urls")),
     path("dashboard/", include("dashboard.urls")),
 
     # 🔑 Auth endpoints

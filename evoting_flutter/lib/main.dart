@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart'; // kIsWeb
 import 'pages/login_page.dart';
 import 'pages/netizen_signup_page.dart';
 import 'pages/home_page.dart';
+import 'pages/netizen_menu_page.dart';
 import 'pages/voting_page.dart';
 import 'pages/results_page.dart';
 import 'pages/topics_page.dart';
@@ -25,9 +26,15 @@ import 'pages/region_battle_page.dart';
 import 'pages/gamification_page.dart';
 import 'pages/public_hub_page.dart';
 import 'pages/public_recap_page.dart';
+import 'pages/admin_analytics_page.dart';
+import 'pages/export_page.dart';
+import 'pages/notifications_page.dart';
+import 'services/push_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Best-effort: daftarkan FCM token (skip bila Firebase tak dikonfigurasi).
+  initPushNotifications();
   runApp(const MyApp());
 }
 
@@ -62,6 +69,9 @@ class MyApp extends StatelessWidget {
         '/gamification': (context) => const GamificationPage(),
         '/public_hub': (context) => const PublicHubPage(),
         '/public_recap': (context) => const PublicRecapPage(),
+        '/admin_analytics': (context) => const AdminAnalyticsPage(),
+        '/export': (context) => const ExportPage(),
+        '/notifications': (context) => const NotificationsPage(),
         '/public_results': (context) => const _PublicResultsRedirect(),
         '/topics': (context) => const TopicsPage(),
         '/profile': (context) => const ProfilePage(),

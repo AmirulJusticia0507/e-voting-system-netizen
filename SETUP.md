@@ -362,6 +362,24 @@ Supaya hasil "keluar dari kotak WhatsApp" dan ajang voting terasa ramai ala Kore
 
 ---
 
+### D. Batch terakhir: analitik, ekspor CSV, & notifikasi
+
+- **Dashboard analitik** (admin): `GET /api/votes/analytics/` (requirement `manage_votes`) →
+  total suara/topik, tren 7 hari, top region, partisipasi per periode. Flutter: `pages/admin_analytics_page.dart`.
+- **Ekspor CSV** (admin): `GET /api/votes/export_results/`, `export_votes/`, `export_audit/`
+  (StreamingHttpResponse + BOM). Flutter: `pages/export_page.dart` + util `utils/csv_download*` (web/mobile).
+- **Notifikasi in-app**: app `notifications` (Notification, Broadcast), `GET /api/notifications/`,
+  unread count, mark-read, dan broadcast admin `POST /api/notifications/broadcasts/send/`.
+  Flutter: `pages/notifications_page.dart` + lonceng ber-notif-badge di `home_page.dart`.
+- **Push FCM (opsional/berat)**: `User.fcm_token` (`users/0009_user_fcm_token`); `POST /api/users/fcm/`
+  daftarkan token; `notifications/services.send_push` via FCM HTTP bila `FCM_SERVER_KEY` diset
+  (perlu `requests`). Flutter: `services/push_service.dart` (pakai `firebase_messaging`).
+  Setup Firebase wajib (google-services.json / GoogleService-Info.plist) baru push aktif.
+
+> Jalankan: `python manage.py makemigrations notifications users && python manage.py migrate` + `flutter pub get`.
+
+---
+
 ---
 
 ## 7. Troubleshooting

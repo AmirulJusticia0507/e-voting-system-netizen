@@ -64,6 +64,7 @@ class _HomePageState extends State<HomePage> {
       {"title": "Papan Publik & Arsip", "icon": Icons.storefront, "color": Colors.indigo, "route": "/public_hub"},
       {"title": "Audit Trust", "icon": Icons.security, "color": Colors.lightBlue, "route": "/audit"},
       {"title": "Lihat Topik", "icon": Icons.topic, "color": Colors.blue, "route": "/topics"},
+      {"title": "Notifikasi", "icon": Icons.notifications, "color": Colors.pink, "route": "/notifications"},
       {"title": "Profil Saya", "icon": Icons.person, "color": Colors.orange, "route": "/profile"},
     ];
 
@@ -75,6 +76,9 @@ class _HomePageState extends State<HomePage> {
       if (has("manage_votes")) {"title": "Kelola Votes", "icon": Icons.how_to_vote, "color": Colors.purple, "route": "/manage_votes"},
       if (has("manage_comments")) {"title": "Kelola Komentar", "icon": Icons.comment, "color": Colors.indigo, "route": "/manage_comments"},
       if (has("manage_roles")) {"title": "Kelola Role & Izin", "icon": Icons.admin_panel_settings, "color": Colors.brown, "route": "/manage_roles"},
+      if (has("manage_votes")) {"title": "Analitik", "icon": Icons.analytics, "color": Colors.green, "route": "/admin_analytics"},
+      if (has("manage_votes")) {"title": "Ekspor CSV", "icon": Icons.download, "color": Colors.teal, "route": "/export"},
+      if (has("manage_users")) {"title": "Broadcast Notif", "icon": Icons.campaign, "color": Colors.pink, "route": "/notifications"},
       if (has("manage_elections")) {"title": "Kelola Pemilihan", "icon": Icons.event_note, "color": Colors.deepOrange, "route": "/manage_elections"},
       if (has("manage_elections")) {"title": "Kelola Wilayah", "icon": Icons.map, "color": Colors.teal, "route": "/manage_regions"},
       {"title": "Audit Trust", "icon": Icons.security, "color": Colors.lightBlue, "route": "/audit"},
@@ -90,6 +94,38 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.white,
         centerTitle: true,
         actions: [
+          FutureBuilder<int?>(
+            future: api.get("notifications/unread_count/").then((res) {
+              if (res.statusCode == 200) return (jsonDecode(res.body)['unread'] ?? 0) as int;
+              return 0;
+            }),
+            builder: (_, snap) {
+              final unread = snap.data ?? 0;
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications),
+                    onPressed: () => Navigator.pushNamed(context, '/notifications'),
+                  ),
+                  if (unread > 0)
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text('$unread',
+                            style: const TextStyle(color: Colors.white, fontSize: 10)),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {

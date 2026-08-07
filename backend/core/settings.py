@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'roles',
     'election',
     'audit',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -225,4 +226,10 @@ RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
 # Di produksi ganti dengan domain publik (mis. https://evoting.example.id).
 # =============================================================================
 PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+
+# =============================================================================
+# 🔔 Push Notifications (FCM)
+# Kosongkan FCM_SERVER_KEY agar broadcast hanya tersimpan in-app (tanpa push).
+# =============================================================================
+FCM_SERVER_KEY = os.getenv("FCM_SERVER_KEY", "")
 
