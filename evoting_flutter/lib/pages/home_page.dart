@@ -129,10 +129,9 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await api.logout();
-              if (mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
+              navigator.pushReplacementNamed('/login');
             },
           ),
         ],

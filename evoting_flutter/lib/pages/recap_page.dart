@@ -137,23 +137,28 @@ class _RecapPageState extends State<RecapPage> {
           ),
           children: [
             ..._candidates(totals['candidates'] as List<dynamic>? ?? []),
-            if ((e['regions'] as List<dynamic>? ?? []).isNotEmpty) ...[
-              const Divider(),
-              ...(e['regions'] as List<dynamic>!).map<Widget>((r) {
-                return ListTile(
-                  dense: true,
-                  title: Text("${r['region_name']} — ${r['total_votes']} suara"),
-                  subtitle: Text(
-                    "${r['total_registered'] ?? 0} DPT | Partisipasi: "
-                    "${r['participation_percent']?.toStringAsFixed(1) ?? '-'}%",
-                  ),
-                );
-              }),
-            ],
+            ..._regions(e['regions'] as List<dynamic>? ?? []),
           ],
         ),
       );
     }).toList();
+  }
+
+  List<Widget> _regions(List<dynamic> regions) {
+    if (regions.isEmpty) return const [];
+    return [
+      const Divider(),
+      ...regions.map<Widget>((r) {
+        return ListTile(
+          dense: true,
+          title: Text("${r['region_name']} — ${r['total_votes']} suara"),
+          subtitle: Text(
+            "${r['total_registered'] ?? 0} DPT | Partisipasi: "
+            "${r['participation_percent']?.toStringAsFixed(1) ?? '-'}%",
+          ),
+        );
+      }),
+    ];
   }
 
   List<Widget> _candidates(List<dynamic> candidates) {

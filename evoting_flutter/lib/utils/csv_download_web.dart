@@ -1,15 +1,21 @@
-import 'dart:html' as html;
-import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:js_interop';
+import 'dart:typed_data';
+
+import 'package:web/web.dart' as web;
 
 /// Implementasi web: memicu download via anchor blob + URL.createObjectURL.
 Future<String?> download(String filename, String content) async {
-  final bytes = utf8.encode(content);
-  final blob = html.Blob([Uint8List.fromList(bytes)], 'text/csv;charset=utf-8');
-  final url = html.Url.createObjectUrlFromBlob(blob);
-  final anchor = html.AnchorElement(href: url)
+  final bytes = Uint8List.fromList(utf8.encode(content));
+  final blob = web.Blob(
+    <web.BlobPart>[bytes.toJS].toJS,
+    web.BlobPropertyBag(type: 'text/csv;charset=utf-8'),
+  );
+  final url = web.URL.createObjectURL(blob);
+  web.HTMLAnchorElement()
+    ..href = url
     ..download = filename
     ..click();
-  html.Url.revokeObjectUrl(url);
+  web.URL.revokeObjectURL(url);
   return null;
 }

@@ -96,8 +96,11 @@ class _LiveResultsPageState extends State<LiveResultsPage> {
       if (prev != null) {
         if (i < prev) {
           mov[id] = 1; // naik
-        } else if (i > prev) mov[id] = -1; // turun
-        else mov[id] = 0; // tetap
+        } else if (i > prev) {
+          mov[id] = -1; // turun
+        } else {
+          mov[id] = 0; // tetap
+        }
       }
     }
     _prevOrder = newOrder;
@@ -105,10 +108,16 @@ class _LiveResultsPageState extends State<LiveResultsPage> {
     data = next;
   }
 
+  void _disconnect() {
+    _sub?.cancel();
+    _sub = null;
+    _channel?.sink.close();
+    _channel = null;
+  }
+
   @override
   void dispose() {
-    _sub?.cancel();
-    _channel?.sink.close();
+    _disconnect();
     super.dispose();
   }
 

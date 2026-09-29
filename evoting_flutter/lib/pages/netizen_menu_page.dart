@@ -31,9 +31,9 @@ class _NetizenMenuPageState extends State<NetizenMenuPage> {
             icon: const Icon(Icons.logout),
             tooltip: "Logout",
             onPressed: () async {
+              final navigator = Navigator.of(context);
               await api.logout();
-              if (!mounted) return;
-              Navigator.pushReplacementNamed(context, '/login');
+              navigator.pushReplacementNamed('/login');
             },
           )
         ],

@@ -46,8 +46,8 @@ class _QRScanPageState extends State<QRScanPage> {
       body: MobileScanner(
         controller: _controller,
         onDetect: _onDetect,
-        errorBuilder: (context, error) => Center(
-          child: Text("Error: $error",
+        errorBuilder: (context, error, child) => Center(
+          child: Text("Error: ${error.errorCode.name} (${error.errorDetails?.message ?? error.errorCode.name})",
               style: const TextStyle(color: Colors.red)),
         ),
       ),

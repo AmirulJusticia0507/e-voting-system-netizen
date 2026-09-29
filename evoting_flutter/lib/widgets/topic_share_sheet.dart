@@ -6,7 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../services/api_service.dart';
 
 /// Helper untuk membuka panel "Bagikan / QR" hasil sebuah topik.
-/// Memakai endpoint publik /api/votes/public/share/<id>/ sehingga link & QR
+/// Memakai endpoint publik `/api/votes/public/share/<id>/` sehingga link & QR
 /// bisa dibuka siapa pun tanpa login.
 Future<void> showShareSheet(BuildContext context, int topicId,
     {String? topicTitle}) async {
@@ -99,9 +99,10 @@ class _ShareSheet extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Center(
-              child: Text(url.isEmpty
-                  ? "Tidak ada link"
-                  : "Scan QR / bagikan link agar bisa dilihat tanpa login",
+              child: Text(
+                  url.isEmpty
+                      ? "Tidak ada link"
+                      : "Scan QR / bagikan link agar bisa dilihat tanpa login",
                   style: const TextStyle(fontSize: 12)),
             ),
             const SizedBox(height: 16),

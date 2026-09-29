@@ -86,6 +86,8 @@ class _ManageElectionsPageState extends State<ManageElectionsPage> {
             ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
+                final navigator = Navigator.of(ctx);
+                final messenger = ScaffoldMessenger.of(context);
                 final body = {
                   "name": nameCtrl.text.trim(),
                   "description": descCtrl.text.trim(),
@@ -96,11 +98,11 @@ class _ManageElectionsPageState extends State<ManageElectionsPage> {
                 http.Response res = isEdit
                     ? await api.patchJson("elections/${e['id']}/", body, UserRole.admin)
                     : await api.post("elections/", body, UserRole.admin);
-                Navigator.pop(ctx);
+                navigator.pop();
                 if (res.statusCode == 200 || res.statusCode == 201) {
-                  fetch();
+                  if (mounted) fetch();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Gagal: ${res.body}")));
+                  messenger.showSnackBar(SnackBar(content: Text("Gagal: ${res.body}")));
                 }
               },
               child: const Text("Simpan"),
@@ -158,8 +160,6 @@ class _ManageElectionsPageState extends State<ManageElectionsPage> {
                   itemCount: elections.length,
                   itemBuilder: (context, i) {
                     final e = elections[i];
-                    final status = e['status'] ?? '';
-                    final color = status == 'ongoing' ? Colors.green : (status == 'upcoming' ? Colors.orange : Colors.grey);
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(
@@ -248,12 +248,13 @@ class _ManageRegionsPageState extends State<ManageRegionsPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.trim().isEmpty) return;
+              final navigator = Navigator.of(ctx);
               final body = {"name": nameCtrl.text.trim(), "code": codeCtrl.text.trim()};
               http.Response res = isEdit
                   ? await api.patchJson("elections/regions/${r['id']}/", body, UserRole.admin)
                   : await api.post("elections/regions/", body, UserRole.admin);
-              Navigator.pop(ctx);
-              if (res.statusCode == 200 || res.statusCode == 201) fetch();
+              navigator.pop();
+              if ((res.statusCode == 200 || res.statusCode == 201) && mounted) fetch();
             },
             child: const Text("Simpan"),
           ),
@@ -388,14 +389,16 @@ class _ManageDptPageState extends State<ManageDptPage> {
             ElevatedButton(
               onPressed: () async {
                 if (phoneCtrl.text.trim().isEmpty) return;
+                final navigator = Navigator.of(ctx);
+                final messenger = ScaffoldMessenger.of(context);
                 final res = await api.post(
                   "elections/${widget.election['id']}/voters/",
                   {"phone_number": phoneCtrl.text.trim(), "region": regionId, "is_active": active},
                   UserRole.admin,
                 );
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(res.statusCode == 201 || res.statusCode == 200 ? "Pemilih ditambahkan." : "Gagal: ${res.body}")));
-                fetch();
+                navigator.pop();
+                messenger.showSnackBar(SnackBar(content: Text(res.statusCode == 201 || res.statusCode == 200 ? "Pemilih ditambahkan." : "Gagal: ${res.body}")));
+                if (mounted) fetch();
               },
               child: const Text("Simpan"),
             ),

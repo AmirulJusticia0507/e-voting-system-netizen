@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'home_page.dart';
+import 'netizen_menu_page.dart';
 import 'netizen_signup_page.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
@@ -88,6 +89,7 @@ class _LoginPageState extends State<LoginPage> {
         final data = jsonDecode(res.body);
         if (data["detail"] != null) errorMsg = data["detail"];
       } catch (_) {}
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(errorMsg)));
     }
@@ -106,6 +108,7 @@ class _LoginPageState extends State<LoginPage> {
       final isDeviceSupported = await auth.isDeviceSupported();
 
       if (!canCheck || !isDeviceSupported) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text("Perangkat tidak mendukung biometrik")));
         return;
@@ -132,6 +135,7 @@ class _LoginPageState extends State<LoginPage> {
                 MaterialPageRoute(builder: (_) => const NetizenMenuPage()));
           }
         } else {
+          if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
               content:
                   Text("Belum pernah login sebelumnya. Gunakan login biasa.")));

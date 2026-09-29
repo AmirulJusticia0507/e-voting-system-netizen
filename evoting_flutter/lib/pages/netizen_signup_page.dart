@@ -69,6 +69,7 @@ class _NetizenSignupPageState extends State<NetizenSignupPage> {
       webFilename: _webFilename,
     );
 
+    if (!mounted) return;
     setState(() => isLoading = false);
 
     if (res.statusCode == 201) {
@@ -133,10 +134,11 @@ class _NetizenSignupPageState extends State<NetizenSignupPage> {
                                     )
                                   : null,
                         ),
-                        child: (_selectedImage == null && _webImageBytes == null)
-                            ? const Icon(Icons.camera_alt,
-                                size: 40, color: Colors.grey)
-                            : null,
+                        child:
+                            (_selectedImage == null && _webImageBytes == null)
+                                ? const Icon(Icons.camera_alt,
+                                    size: 40, color: Colors.grey)
+                                : null,
                       ),
                     ),
                     const SizedBox(height: 20),

@@ -4,7 +4,7 @@ import '../services/api_service.dart';
 import '../widgets/topic_share_sheet.dart';
 
 /// Halaman publik (bisa dibuka TANPA login) — untuk link share / QR.
-/// Endpoint: /api/votes/public/<id>/ (AllowAny).
+/// Endpoint: `/api/votes/public/<id>/` (AllowAny).
 class PublicResultsPage extends StatefulWidget {
   final int topicId;
   const PublicResultsPage({super.key, required this.topicId});
@@ -63,8 +63,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
           IconButton(
             tooltip: "Bagikan",
             icon: const Icon(Icons.share),
-            onPressed: () =>
-                showShareSheet(context, widget.topicId, topicTitle: topic?['title']?.toString()),
+            onPressed: () => showShareSheet(context, widget.topicId,
+                topicTitle: topic?['title']?.toString()),
           ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: fetch),
         ],
@@ -76,7 +76,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.search_off, size: 48, color: Colors.grey),
+                      const Icon(Icons.search_off,
+                          size: 48, color: Colors.grey),
                       const SizedBox(height: 12),
                       Text(error!, textAlign: TextAlign.center),
                     ],
@@ -100,7 +101,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                     Card(
                       color: Colors.deepPurple.shade50,
                       child: ListTile(
-                        leading: const Icon(Icons.link, color: Colors.deepPurple),
+                        leading:
+                            const Icon(Icons.link, color: Colors.deepPurple),
                         title: const Text("Bukti integritas (root hash)",
                             style: TextStyle(fontSize: 13)),
                         subtitle: Text(
@@ -133,7 +135,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
         ),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: isLeader ? Colors.amber : Colors.deepPurple.shade100,
+            backgroundColor:
+                isLeader ? Colors.amber : Colors.deepPurple.shade100,
             child: Text("${i + 1}",
                 style: TextStyle(
                     color: isLeader ? Colors.black87 : Colors.deepPurple,

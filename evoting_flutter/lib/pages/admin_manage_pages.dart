@@ -69,15 +69,17 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
             ElevatedButton(
               onPressed: () async {
                 if (current == null) return;
+                final navigator = Navigator.of(ctx);
+                final messenger = ScaffoldMessenger.of(context);
                 final res = await api.post("users/${u['id']}/set_role/", {"role": current}, UserRole.admin);
-                Navigator.pop(ctx);
+                navigator.pop();
                 if (res.statusCode == 200) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(content: Text("Role diperbarui.")),
                   );
-                  fetchUsers();
+                  if (mounted) fetchUsers();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text("Gagal: ${res.body}")),
                   );
                 }
@@ -101,12 +103,14 @@ class _ManageUsersPageState extends State<ManageUsersPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
-              Navigator.pop(ctx);
+              final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(context);
+              navigator.pop();
               final res = await api.delete("users/${u['id']}/", UserRole.admin);
               if (res.statusCode == 204 || res.statusCode == 200) {
-                fetchUsers();
+                if (mounted) fetchUsers();
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text("Gagal hapus: ${res.body}")),
                 );
               }
@@ -211,14 +215,15 @@ class _ManageTopicsPageState extends State<ManageTopicsPage> {
           ElevatedButton(
             onPressed: () async {
               if (titleCtrl.text.isEmpty) return;
+              final navigator = Navigator.of(ctx);
               final res = await api.post("topics/", {
                 "title": titleCtrl.text,
                 "description": descCtrl.text,
                 "is_active": true,
               });
               if (res.statusCode == 201) {
-                Navigator.pop(ctx);
-                fetchTopics();
+                navigator.pop();
+                if (mounted) fetchTopics();
               }
             },
             child: const Text("Simpan"),
@@ -347,6 +352,7 @@ class _ManageCandidatesPageState extends State<ManageCandidatesPage> {
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
               onPressed: () async {
                 if (nameCtrl.text.isEmpty || selectedTopicId == null) return;
+                final navigator = Navigator.of(ctx);
                 final body = {
                   "topic": selectedTopicId,
                   "name": nameCtrl.text,
@@ -355,15 +361,15 @@ class _ManageCandidatesPageState extends State<ManageCandidatesPage> {
 
                 if (isEdit) {
                   final res = await api.patchJson("candidates/${candidate['id']}/", body);
-                  if (res.statusCode == 200 && mounted) {
-                    Navigator.pop(ctx);
-                    fetchData();
+                  if (res.statusCode == 200) {
+                    navigator.pop();
+                    if (mounted) fetchData();
                   }
                 } else {
                   final res = await api.post("candidates/", body);
-                  if (res.statusCode == 201 && mounted) {
-                    Navigator.pop(ctx);
-                    fetchData();
+                  if (res.statusCode == 201) {
+                    navigator.pop();
+                    if (mounted) fetchData();
                   }
                 }
               },
@@ -386,18 +392,20 @@ class _ManageCandidatesPageState extends State<ManageCandidatesPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
+              final navigator = Navigator.of(ctx);
+              final messenger = ScaffoldMessenger.of(context);
               final token = await api.getToken();
               final uri = Uri.parse("${api.baseUrl}candidates/$id/");
               final delRes = await http.delete(uri, headers: {
                 if (token != null) "Authorization": "Bearer $token",
               });
 
-              if ((delRes.statusCode == 204 || delRes.statusCode == 200) && mounted) {
-                Navigator.pop(ctx);
-                fetchData();
-              } else if (mounted) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
+              if (delRes.statusCode == 204 || delRes.statusCode == 200) {
+                navigator.pop();
+                if (mounted) fetchData();
+              } else {
+                navigator.pop();
+                messenger.showSnackBar(
                   SnackBar(content: Text("Gagal menghapus kandidat. Status: ${delRes.statusCode}")),
                 );
               }

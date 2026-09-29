@@ -38,13 +38,15 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
   void _showRoleDialog([Map<String, dynamic>? role]) {
     final isEdit = role != null;
     final nameCtrl = TextEditingController(text: isEdit ? role['name'] : '');
-    final descCtrl = TextEditingController(text: isEdit ? (role['description'] ?? '') : '');
+    final descCtrl =
+        TextEditingController(text: isEdit ? (role['description'] ?? '') : '');
     Set<int> selected = isEdit
         ? Set<int>.from((role['permissions'] as List<dynamic>? ?? [])
             .map((p) => p is int ? p : (p is Map ? p['id'] : 0))
             .where((e) => e != 0))
         : {};
 
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -60,19 +62,24 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
                   TextField(
                     controller: nameCtrl,
                     enabled: !(isEdit && role['is_system'] == true),
-                    decoration: const InputDecoration(labelText: "Nama Role", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: "Nama Role", border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: descCtrl,
-                    decoration: const InputDecoration(labelText: "Deskripsi", border: OutlineInputBorder()),
+                    decoration: const InputDecoration(
+                        labelText: "Deskripsi", border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 16),
-                  const Text("Izin (permissions):", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text("Izin (permissions):",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   ...permissions.map((p) {
                     final id = p['id'];
-                    final enabled = isEdit && role['is_system'] == true && role['name'] == 'superadmin';
+                    final enabled = isEdit &&
+                        role['is_system'] == true &&
+                        role['name'] == 'superadmin';
                     return CheckboxListTile(
                       dense: true,
                       title: Text(p['name'] ?? p['code'] ?? ''),
@@ -90,32 +97,42 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Batal")),
             ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
                 http.Response res;
                 if (isEdit) {
-                  res = await api.patchJson("roles/${role['id']}/", {
-                    "name": nameCtrl.text.trim(),
-                    "description": descCtrl.text.trim(),
-                    "permissions": selected.toList(),
-                  }, UserRole.admin);
+                  res = await api.patchJson(
+                      "roles/${role['id']}/",
+                      {
+                        "name": nameCtrl.text.trim(),
+                        "description": descCtrl.text.trim(),
+                        "permissions": selected.toList(),
+                      },
+                      UserRole.admin);
                 } else {
-                  res = await api.post("roles/", {
-                    "name": nameCtrl.text.trim(),
-                    "description": descCtrl.text.trim(),
-                    "permissions": selected.toList(),
-                  }, UserRole.admin);
+                  res = await api.post(
+                      "roles/",
+                      {
+                        "name": nameCtrl.text.trim(),
+                        "description": descCtrl.text.trim(),
+                        "permissions": selected.toList(),
+                      },
+                      UserRole.admin);
                 }
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
+                if (!mounted) return;
                 if (res.statusCode == 200 || res.statusCode == 201) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     const SnackBar(content: Text("Role disimpan.")),
                   );
                   fetchData();
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger.showSnackBar(
                     SnackBar(content: Text("Gagal: ${res.body}")),
                   );
                 }
@@ -135,12 +152,16 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
         title: const Text("Hapus Role"),
         content: Text("Hapus role '${role['name']}'?"),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, foregroundColor: Colors.white),
             onPressed: () async {
               Navigator.pop(ctx);
-              final res = await api.delete("roles/${role['id']}/", UserRole.admin);
+              final res =
+                  await api.delete("roles/${role['id']}/", UserRole.admin);
+              if (!mounted) return;
               if (res.statusCode == 204 || res.statusCode == 200) {
                 fetchData();
               } else {
@@ -180,27 +201,34 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
                   itemCount: roles.length,
                   itemBuilder: (context, i) {
                     final r = roles[i];
-                    final codes = (r['permission_codes'] as List<dynamic>? ?? []);
+                    final codes =
+                        (r['permission_codes'] as List<dynamic>? ?? []);
                     return Card(
                       margin: const EdgeInsets.only(bottom: 10),
                       child: ListTile(
                         title: Row(
                           children: [
-                            Text(r['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text(r['name'] ?? '',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
                             if (r['is_system'] == true) ...[
                               const SizedBox(width: 8),
-                              const Chip(label: Text("Sistem"), visualDensity: VisualDensity.compact),
+                              const Chip(
+                                  label: Text("Sistem"),
+                                  visualDensity: VisualDensity.compact),
                             ],
                           ],
                         ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if ((r['description'] ?? '').isNotEmpty) Text(r['description'] ?? ''),
+                            if ((r['description'] ?? '').isNotEmpty)
+                              Text(r['description'] ?? ''),
                             const SizedBox(height: 6),
                             Text(
                               "User: ${r['user_count'] ?? 0} | Izin: ${codes.join(', ')}",
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              style: TextStyle(
+                                  color: Colors.grey[600], fontSize: 12),
                             ),
                           ],
                         ),
@@ -211,11 +239,13 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.edit, color: Colors.blue),
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
                                     onPressed: () => _showRoleDialog(r),
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
                                     onPressed: () => _deleteRole(r),
                                   ),
                                 ],
