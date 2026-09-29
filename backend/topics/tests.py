@@ -174,3 +174,53 @@ class CivicPollImportTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 401)
+
+    def test_repeated_event_id_returns_existing_poll(self):
+        existing = Topic.objects.create(
+            title="Sudah diimpor",
+            external_event_id="duplicate-001",
+            topic_type=Topic.TopicType.CIVIC_POLL,
+        )
+        response = self.client.post(
+            "/api/topics/import-civic-draft/",
+            {
+                "schema_version": "1.0",
+                "event_id": "duplicate-001",
+                "generated_at": "2026-09-29T10:00:00+07:00",
+                "source": {"type": "document", "title": "Dokumen"},
+                "poll_draft": {
+                    "question": "Pertanyaan baru?",
+                    "options": [
+                        {"code": "A", "label": "Ya"},
+                        {"code": "B", "label": "Tidak"},
+                    ],
+                },
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["id"], existing.id)
+        self.assertEqual(Topic.objects.count(), 1)
+
+    def test_unsupported_schema_version_is_rejected(self):
+        response = self.client.post(
+            "/api/topics/import-civic-draft/",
+            {
+                "schema_version": "2.0",
+                "event_id": "future-001",
+                "generated_at": "2026-09-29T10:00:00+07:00",
+                "source": {"type": "document", "title": "Dokumen"},
+                "poll_draft": {
+                    "question": "Pertanyaan?",
+                    "options": [
+                        {"code": "A", "label": "Ya"},
+                        {"code": "B", "label": "Tidak"},
+                    ],
+                },
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("schema_version", response.data)

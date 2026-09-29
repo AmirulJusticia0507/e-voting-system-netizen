@@ -45,6 +45,14 @@ class TopicViewSet(viewsets.ModelViewSet):
     def import_civic_draft(self, request):
         serializer = CivicPollImportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        existing = Topic.objects.filter(
+            external_event_id=serializer.validated_data["event_id"]
+        ).first()
+        if existing is not None:
+            return Response(
+                TopicSerializer(existing, context={"request": request}).data,
+                status=status.HTTP_200_OK,
+            )
         topic = serializer.save()
         return Response(
             TopicSerializer(topic, context={"request": request}).data,

@@ -15,6 +15,9 @@ class Topic(models.Model):
         CLOSED = "closed", "Closed"
 
     title = models.CharField(max_length=200)
+    external_event_id = models.CharField(
+        max_length=100, unique=True, null=True, blank=True
+    )
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     topic_type = models.CharField(

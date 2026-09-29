@@ -73,6 +73,11 @@ class CivicPollImportSerializer(serializers.Serializer):
     poll_draft = PollDraftSerializer()
     review = serializers.JSONField(required=False, default=dict)
 
+    def validate_schema_version(self, value):
+        if value != "1.0":
+            raise serializers.ValidationError("Versi schema yang didukung hanya 1.0.")
+        return value
+
     @transaction.atomic
     def create(self, validated_data):
         source_data = validated_data["source"]
@@ -95,6 +100,7 @@ class CivicPollImportSerializer(serializers.Serializer):
                 ) from exc
 
         topic = Topic.objects.create(
+            external_event_id=validated_data["event_id"],
             title=poll_data.pop("question"),
             description=description,
             disclaimer=poll_data.pop(
