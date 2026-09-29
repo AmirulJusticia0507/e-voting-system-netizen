@@ -32,9 +32,9 @@ class _GamificationPageState extends State<GamificationPage> {
         final body = jsonDecode(res.body);
         setState(() {
           me = body['me'];
-          board = (body['leaderboard'] as List<dynamic>? ?? []) as List<dynamic>;
+          board = (body['leaderboard'] as List<dynamic>? ?? []);
           badgesMeta =
-              (body['badges_meta'] as Map<String, dynamic>? ?? {}) as Map<String, dynamic>;
+              (body['badges_meta'] as Map<String, dynamic>? ?? {});
           isLoading = false;
         });
       } else {
@@ -101,7 +101,7 @@ class _GamificationPageState extends State<GamificationPage> {
                       style: const TextStyle(
                           fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text("🔥 Streak: ${streak} hari | Ranking: #${me?['rank'] ?? '-'}"),
+                  Text("🔥 Streak: $streak hari | Ranking: #${me?['rank'] ?? '-'}"),
                 ],
               ),
             ),
@@ -115,7 +115,7 @@ class _GamificationPageState extends State<GamificationPage> {
       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold));
 
   Widget _badges() {
-    final owned = (me?['badges'] as List<dynamic>? ?? []) as List<dynamic>;
+    final owned = (me?['badges'] as List<dynamic>? ?? []);
     if (owned.isEmpty) {
       return const Text("Belum ada badge. Ikut voting untuk mendapatkannya! 🗳️");
     }

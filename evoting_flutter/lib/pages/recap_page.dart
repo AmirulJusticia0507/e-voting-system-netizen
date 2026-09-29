@@ -86,16 +86,16 @@ class _RecapPageState extends State<RecapPage> {
   Widget _verifyCard() {
     final v = verifyResult;
     return Card(
-      color: v == null ? Colors.grey.shade100 : (v! ? Colors.green.shade50 : Colors.red.shade50),
+      color: v == null ? Colors.grey.shade100 : (v ? Colors.green.shade50 : Colors.red.shade50),
       child: ListTile(
         leading: Icon(
-          v == null ? Icons.verified_user : (v! ? Icons.check_circle : Icons.cancel),
-          color: v == null ? Colors.grey : (v! ? Colors.green : Colors.red),
+          v == null ? Icons.verified_user : (v ? Icons.check_circle : Icons.cancel),
+          color: v == null ? Colors.grey : (v ? Colors.green : Colors.red),
         ),
         title: Text(
           v == null
               ? "Tanda tangan belum diverifikasi"
-              : (v! ? "Tanda tangan VALID ✓" : "Tanda tangan TIDAK VALID ✗"),
+              : (v ? "Tanda tangan VALID ✓" : "Tanda tangan TIDAK VALID ✗"),
         ),
         subtitle: Text("Tap ikon ✓ / tombol untuk verifikasi."),
       ),

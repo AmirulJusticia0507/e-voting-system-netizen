@@ -94,8 +94,9 @@ class _LiveResultsPageState extends State<LiveResultsPage> {
       final prev = _prevOrder[id];
       newOrder[id] = i;
       if (prev != null) {
-        if (i < prev) mov[id] = 1; // naik
-        else if (i > prev) mov[id] = -1; // turun
+        if (i < prev) {
+          mov[id] = 1; // naik
+        } else if (i > prev) mov[id] = -1; // turun
         else mov[id] = 0; // tetap
       }
     }

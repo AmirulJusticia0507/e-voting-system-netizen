@@ -56,8 +56,8 @@ class _NetizenMenuPageState extends State<NetizenMenuPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      (item["color"] as Color).withOpacity(0.85),
-                      (item["color"] as Color).withOpacity(0.6),
+                      (item["color"] as Color).withValues(alpha: 0.85),
+                      (item["color"] as Color).withValues(alpha: 0.6),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -65,7 +65,7 @@ class _NetizenMenuPageState extends State<NetizenMenuPage> {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: (item["color"] as Color).withOpacity(0.3),
+                      color: (item["color"] as Color).withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     )

@@ -77,7 +77,7 @@ class _AuditPageState extends State<AuditPage> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                   ),
-                  ..._evidence.map(_evCard),
+                  ...evidence.map(_evCard),
                 ],
                 const Divider(height: 30),
                 const Text(

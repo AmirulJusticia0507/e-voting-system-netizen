@@ -59,7 +59,7 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    enabled: !(isEdit && role?['is_system'] == true),
+                    enabled: !(isEdit && role['is_system'] == true),
                     decoration: const InputDecoration(labelText: "Nama Role", border: OutlineInputBorder()),
                   ),
                   const SizedBox(height: 12),
@@ -72,7 +72,7 @@ class _ManageRolesPageState extends State<ManageRolesPage> {
                   const SizedBox(height: 8),
                   ...permissions.map((p) {
                     final id = p['id'];
-                    final enabled = isEdit && role?['is_system'] == true && role?['name'] == 'superadmin';
+                    final enabled = isEdit && role['is_system'] == true && role['name'] == 'superadmin';
                     return CheckboxListTile(
                       dense: true,
                       title: Text(p['name'] ?? p['code'] ?? ''),

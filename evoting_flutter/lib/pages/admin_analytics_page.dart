@@ -112,7 +112,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
   }
 
   Widget _trendChart() {
-    final trend = (data?['trend_days'] as List<dynamic>? ?? []) as List<dynamic>;
+    final trend = (data?['trend_days'] as List<dynamic>? ?? []);
     if (trend.isEmpty) {
       return const Card(
         child: Padding(
@@ -170,10 +170,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
     );
   }
 
-  Widget _regions() {
-    final regions = (data?['top_regions'] as List<dynamic>? ?? []) as List<dynamic>;
+  List<Widget> _regions() {
+    final regions = (data?['top_regions'] as List<dynamic>? ?? []);
     return regions.isEmpty
-        ? const Card(child: ListTile(title: Text("Belum ada data.")))
+        ? const [Card(child: ListTile(title: Text("Belum ada data.")))]
         : regions.asMap().entries.map<Widget>((e) {
             final r = e.value;
             return Card(
@@ -190,10 +190,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
           }).toList();
   }
 
-  Widget _periods() {
-    final periods = (data?['per_period'] as List<dynamic>? ?? []) as List<dynamic>;
+  List<Widget> _periods() {
+    final periods = (data?['per_period'] as List<dynamic>? ?? []);
     return periods.isEmpty
-        ? const Text("Belum ada periode.")
+        ? const [Text("Belum ada periode.")]
         : periods.map<Widget>((p) {
             final part = p['participation_percent'];
             return Card(

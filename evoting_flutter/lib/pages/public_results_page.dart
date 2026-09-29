@@ -52,7 +52,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   Widget build(BuildContext context) {
     final topic = data?['topic'] as Map<String, dynamic>?;
     final List<dynamic> candidates =
-        (data?['candidates'] as List<dynamic>? ?? []) as List<dynamic>;
+        (data?['candidates'] as List<dynamic>? ?? []);
 
     return Scaffold(
       appBar: AppBar(

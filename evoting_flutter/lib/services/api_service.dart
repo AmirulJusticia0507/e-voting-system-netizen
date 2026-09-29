@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data'; // buat Web upload file
+// buat Web upload file
 import 'dart:io' show File; // hanya ambil File (biar aman di Web)
 import 'package:flutter/foundation.dart'; // kIsWeb
 import 'dart:io' show Platform;

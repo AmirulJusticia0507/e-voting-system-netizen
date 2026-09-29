@@ -93,7 +93,7 @@ class _PublicHubPageState extends State<PublicHubPage> {
 
   Widget _periodCard(Map<String, dynamic> p) {
     final status = p['status']?.toString() ?? "";
-    final topics = (p['topics'] as List<dynamic>? ?? []) as List<dynamic>;
+    final topics = (p['topics'] as List<dynamic>? ?? []);
     final Color statusColor = status == 'ongoing'
         ? Colors.green
         : (status == 'upcoming' ? Colors.orange : Colors.grey);

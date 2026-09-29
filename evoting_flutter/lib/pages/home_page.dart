@@ -178,14 +178,14 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [color.withOpacity(0.8), color.withOpacity(0.5)],
+            colors: [color.withValues(alpha: 0.8), color.withValues(alpha: 0.5)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.4),
+              color: color.withValues(alpha: 0.4),
               blurRadius: 12,
               offset: const Offset(4, 6),
             ),

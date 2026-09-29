@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart'; // kIsWeb
 class LoginPage extends StatefulWidget {
   final VoidCallback? onSignupTap; // ✅ optional
 
-  const LoginPage({Key? key, this.onSignupTap}) : super(key: key);
+  const LoginPage({super.key, this.onSignupTap});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
