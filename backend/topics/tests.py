@@ -45,6 +45,21 @@ class CivicPollImportTests(TestCase):
             password="secret",
         )
         self.client.force_authenticate(admin)
+        self.admin = admin
+
+    def create_draft(self):
+        topic = Topic.objects.create(
+            title="Kebijakan publik",
+            topic_type=Topic.TopicType.CIVIC_POLL,
+            publication_status=Topic.PublicationStatus.DRAFT,
+            is_active=False,
+        )
+        CivicPollSource.objects.create(
+            topic=topic,
+            source_type=CivicPollSource.SourceType.DOCUMENT,
+            title="Naskah kebijakan",
+        )
+        return topic
 
     def test_import_creates_unpublished_poll_with_source_and_options(self):
         response = self.client.post(
@@ -83,3 +98,27 @@ class CivicPollImportTests(TestCase):
         self.assertFalse(topic.is_active)
         self.assertEqual(topic.candidates.count(), 2)
         self.assertEqual(topic.civic_source.publisher, "DPRD Contoh")
+
+    def test_review_publish_and_close_workflow(self):
+        topic = self.create_draft()
+
+        review_response = self.client.post(f"/api/topics/{topic.id}/submit-review/")
+        publish_response = self.client.post(f"/api/topics/{topic.id}/publish/")
+        close_response = self.client.post(f"/api/topics/{topic.id}/close/")
+
+        self.assertEqual(review_response.status_code, 200)
+        self.assertEqual(publish_response.status_code, 200)
+        self.assertEqual(close_response.status_code, 200)
+        topic.refresh_from_db()
+        self.assertEqual(topic.publication_status, Topic.PublicationStatus.CLOSED)
+        self.assertEqual(topic.reviewed_by, self.admin)
+        self.assertFalse(topic.is_active)
+
+    def test_public_list_hides_unpublished_civic_poll(self):
+        topic = self.create_draft()
+        public_client = APIClient()
+
+        response = public_client.get("/api/topics/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(topic.id, [item["id"] for item in response.data])
