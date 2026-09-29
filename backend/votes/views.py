@@ -423,6 +423,54 @@ def public_results(request, topic_id):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+def civic_aggregate(request, topic_id):
+    """Hasil agregat civic poll tanpa data pemilih atau suara individual."""
+    from django.utils import timezone
+    from candidates.models import Candidate
+    from topics.models import Topic
+
+    topic = Topic.objects.filter(
+        pk=topic_id,
+        topic_type=Topic.TopicType.CIVIC_POLL,
+        publication_status__in=[
+            Topic.PublicationStatus.PUBLISHED,
+            Topic.PublicationStatus.CLOSED,
+        ],
+    ).first()
+    if topic is None:
+        return Response({"detail": "civic_poll_not_found"}, status=404)
+
+    counts = dict(
+        Vote.objects.filter(topic=topic)
+        .values_list("candidate_id")
+        .annotate(total=Count("id"))
+    )
+    total = sum(counts.values())
+    options = [
+        {
+            "code": option.code,
+            "label": option.name,
+            "votes": counts.get(option.id, 0),
+            "percentage": round(counts.get(option.id, 0) * 100 / total, 2)
+            if total
+            else 0.0,
+        }
+        for option in Candidate.objects.filter(topic=topic).order_by("id")
+    ]
+    return Response(
+        {
+            "topic_id": topic.id,
+            "question": topic.title,
+            "status": topic.publication_status,
+            "total_responses": total,
+            "options": options,
+            "updated_at": timezone.now().isoformat(),
+        }
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def public_share(request, topic_id):
     """GET /api/votes/public/share/<id>/ — paket share (text + url + QR data)."""
     from .sharing import topic_share_bundle
