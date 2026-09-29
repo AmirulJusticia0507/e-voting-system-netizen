@@ -428,6 +428,7 @@ def civic_aggregate(request, topic_id):
     from django.utils import timezone
     from candidates.models import Candidate
     from topics.models import Topic
+    from .results import topic_evidence, topic_results
 
     topic = Topic.objects.filter(
         pk=topic_id,
@@ -446,6 +447,8 @@ def civic_aggregate(request, topic_id):
         .annotate(total=Count("id"))
     )
     total = sum(counts.values())
+    result = topic_results(topic.id)
+    evidence = topic_evidence(topic.id)
     options = [
         {
             "code": option.code,
@@ -460,10 +463,17 @@ def civic_aggregate(request, topic_id):
     return Response(
         {
             "topic_id": topic.id,
+            "external_event_id": topic.external_event_id,
             "question": topic.title,
             "status": topic.publication_status,
             "total_responses": total,
+            "total_registered": result["total_registered"],
+            "participation_percent": result["participation_percent"],
             "options": options,
+            "evidence_root": evidence["evidence_root"],
+            "voided": False,
+            "correction_reason": None,
+            "superseded_by_event_id": None,
             "updated_at": timezone.now().isoformat(),
         }
     )

@@ -10,6 +10,7 @@ class CivicAggregateTests(TestCase):
         self.client = APIClient()
         self.topic = Topic.objects.create(
             title="Kebijakan transportasi",
+            external_event_id="civic-transport-001",
             topic_type=Topic.TopicType.CIVIC_POLL,
             publication_status=Topic.PublicationStatus.PUBLISHED,
         )
@@ -22,6 +23,9 @@ class CivicAggregateTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["total_responses"], 0)
         self.assertEqual(len(response.data["options"]), 2)
+        self.assertEqual(response.data["external_event_id"], "civic-transport-001")
+        self.assertIn("evidence_root", response.data)
+        self.assertFalse(response.data["voided"])
         self.assertNotIn("users", response.data)
         self.assertNotIn("votes", response.data)
 
