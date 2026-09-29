@@ -128,6 +128,24 @@ class CivicPollImportSerializer(serializers.Serializer):
         return topic
 
 
+class CivicPollCorrectionSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=2000)
+    superseded_by_event_id = serializers.CharField(max_length=100)
+
+    def validate_superseded_by_event_id(self, value):
+        try:
+            successor = Topic.objects.get(
+                external_event_id=value,
+                topic_type=Topic.TopicType.CIVIC_POLL,
+            )
+        except Topic.DoesNotExist as exc:
+            raise serializers.ValidationError(
+                "Polling pengganti belum tersedia."
+            ) from exc
+        self.context["successor"] = successor
+        return value
+
+
 class TopicSerializer(serializers.ModelSerializer):
     election_name = serializers.SerializerMethodField()
     region_name = serializers.SerializerMethodField()

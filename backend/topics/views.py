@@ -10,7 +10,11 @@ from roles.permissions import ManageTopicsPermission
 
 from .models import Topic
 from .permissions import LexDSSImportPermission
-from .serializers import CivicPollImportSerializer, TopicSerializer
+from .serializers import (
+    CivicPollCorrectionSerializer,
+    CivicPollImportSerializer,
+    TopicSerializer,
+)
 
 
 class TopicViewSet(viewsets.ModelViewSet):
@@ -130,6 +134,50 @@ class TopicViewSet(viewsets.ModelViewSet):
             target_type="topic",
             target_pk=topic.id,
             request=request,
+        )
+        return Response(TopicSerializer(topic, context={"request": request}).data)
+
+    @action(detail=True, methods=["post"])
+    def correct(self, request, pk=None):
+        topic = self.get_object()
+        if topic.topic_type != Topic.TopicType.CIVIC_POLL:
+            return Response(
+                {"detail": "Aksi ini hanya berlaku untuk civic poll."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = CivicPollCorrectionSerializer(data=request.data, context={})
+        serializer.is_valid(raise_exception=True)
+        successor = serializer.context["successor"]
+        if successor.id == topic.id:
+            return Response(
+                {"detail": "Polling tidak dapat menggantikan dirinya sendiri."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        topic.is_voided = True
+        topic.correction_reason = serializer.validated_data["reason"]
+        topic.superseded_by = successor
+        topic.publication_status = Topic.PublicationStatus.CLOSED
+        topic.is_active = False
+        topic.save(
+            update_fields=[
+                "is_voided",
+                "correction_reason",
+                "superseded_by",
+                "publication_status",
+                "is_active",
+            ]
+        )
+        record(
+            "civic_poll.corrected",
+            actor=request.user,
+            target_type="topic",
+            target_pk=topic.id,
+            request=request,
+            detail={
+                "reason": topic.correction_reason,
+                "superseded_by_event_id": successor.external_event_id,
+            },
         )
         return Response(TopicSerializer(topic, context={"request": request}).data)
 

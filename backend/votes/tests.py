@@ -36,3 +36,22 @@ class CivicAggregateTests(TestCase):
         response = self.client.get(f"/api/votes/public/civic/{self.topic.id}/")
 
         self.assertEqual(response.status_code, 404)
+
+    def test_aggregate_exposes_correction_metadata(self):
+        successor = Topic.objects.create(
+            title="Pertanyaan koreksi",
+            external_event_id="civic-transport-002",
+            topic_type=Topic.TopicType.CIVIC_POLL,
+        )
+        self.topic.is_voided = True
+        self.topic.correction_reason = "Pertanyaan diperbaiki."
+        self.topic.superseded_by = successor
+        self.topic.save(
+            update_fields=["is_voided", "correction_reason", "superseded_by"]
+        )
+
+        response = self.client.get(f"/api/votes/public/civic/{self.topic.id}/")
+
+        self.assertTrue(response.data["voided"])
+        self.assertEqual(response.data["correction_reason"], "Pertanyaan diperbaiki.")
+        self.assertEqual(response.data["superseded_by_event_id"], "civic-transport-002")

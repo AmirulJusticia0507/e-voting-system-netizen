@@ -233,3 +233,38 @@ class CivicPollImportTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("schema_version", response.data)
+
+    def test_correction_voids_poll_and_links_successor(self):
+        original = Topic.objects.create(
+            title="Pertanyaan lama",
+            external_event_id="poll-001",
+            topic_type=Topic.TopicType.CIVIC_POLL,
+            publication_status=Topic.PublicationStatus.PUBLISHED,
+            is_active=True,
+        )
+        successor = Topic.objects.create(
+            title="Pertanyaan koreksi",
+            external_event_id="poll-002",
+            topic_type=Topic.TopicType.CIVIC_POLL,
+            publication_status=Topic.PublicationStatus.DRAFT,
+        )
+
+        response = self.client.post(
+            f"/api/topics/{original.id}/correct/",
+            {
+                "reason": "Rujukan pasal pada pertanyaan lama keliru.",
+                "superseded_by_event_id": successor.external_event_id,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        original.refresh_from_db()
+        self.assertTrue(original.is_voided)
+        self.assertFalse(original.is_active)
+        self.assertEqual(original.superseded_by, successor)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action="civic_poll.corrected", target_pk=str(original.id)
+            ).exists()
+        )

@@ -42,6 +42,15 @@ class Topic(models.Model):
     published_at = models.DateTimeField(null=True, blank=True)
     opens_at = models.DateTimeField(null=True, blank=True)
     closes_at = models.DateTimeField(null=True, blank=True)
+    is_voided = models.BooleanField(default=False)
+    correction_reason = models.TextField(blank=True)
+    superseded_by = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="superseded_topics",
+    )
     election = models.ForeignKey(
         "election.ElectionPeriod",
         on_delete=models.SET_NULL,

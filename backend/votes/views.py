@@ -471,9 +471,11 @@ def civic_aggregate(request, topic_id):
             "participation_percent": result["participation_percent"],
             "options": options,
             "evidence_root": evidence["evidence_root"],
-            "voided": False,
-            "correction_reason": None,
-            "superseded_by_event_id": None,
+            "voided": topic.is_voided,
+            "correction_reason": topic.correction_reason or None,
+            "superseded_by_event_id": (
+                topic.superseded_by.external_event_id if topic.superseded_by else None
+            ),
             "updated_at": timezone.now().isoformat(),
         }
     )
