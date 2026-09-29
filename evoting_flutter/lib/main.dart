@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/foundation.dart'; // kIsWeb
+import 'models/topic.dart';
 
 // Pages
 import 'pages/login_page.dart';
@@ -84,15 +85,14 @@ class MyApp extends StatelessWidget {
         '/manage_elections': (context) => const ManageElectionsPage(),
         '/manage_regions': (context) => const ManageRegionsPage(),
       },
-
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/candidates':
             final args = settings.arguments as Map<String, dynamic>;
+            final topic = args['topic'] as Topic;
             return MaterialPageRoute(
               builder: (_) => CandidatesPage(
-                topicId: args['topicId'] as int,
-                topicTitle: args['topicTitle'] as String,
+                topic: topic,
               ),
             );
           case '/comments':
@@ -168,7 +168,8 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _checkLogin() async {
     final token = await storage.read(key: "access_token");
-    final role = await storage.read(key: "user_role"); // ✅ simpan role di storage
+    final role =
+        await storage.read(key: "user_role"); // ✅ simpan role di storage
 
     if (token != null) {
       if (!kIsWeb) {

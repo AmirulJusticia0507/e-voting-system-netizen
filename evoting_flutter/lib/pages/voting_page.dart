@@ -4,6 +4,7 @@ import '../models/candidate.dart';
 import '../models/topic.dart';
 import '../services/api_service.dart';
 import '../widgets/topic_share_sheet.dart';
+import '../widgets/civic_poll_context_card.dart';
 
 class VotingPage extends StatefulWidget {
   final int? topicId;
@@ -25,6 +26,13 @@ class _VotingPageState extends State<VotingPage> {
   bool actionLoading = false;
   int? votedCandidateId;
   bool hasVotedTopic = false;
+
+  Topic? get selectedTopic {
+    for (final topic in topics) {
+      if (topic.id == selectedTopicId) return topic;
+    }
+    return null;
+  }
 
   @override
   void initState() {
@@ -71,7 +79,8 @@ class _VotingPageState extends State<VotingPage> {
         if (resVotes.statusCode == 200) {
           final List votes = jsonDecode(resVotes.body);
           final userTopicVote = votes.firstWhere(
-            (v) => (v['topic'] is int ? v['topic'] : v['topic']?['id']) == topicId,
+            (v) =>
+                (v['topic'] is int ? v['topic'] : v['topic']?['id']) == topicId,
             orElse: () => null,
           );
           if (userTopicVote != null) {
@@ -103,10 +112,11 @@ class _VotingPageState extends State<VotingPage> {
       if (res.statusCode == 201) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Berhasil vote untuk ${candidate.name}! 🎉 Bukti voting dikirim ke WhatsApp Anda.")),
+          SnackBar(
+              content: Text(
+                  "Berhasil vote untuk ${candidate.name}! 🎉 Bukti voting dikirim ke WhatsApp Anda.")),
         );
         fetchCandidatesForTopic(selectedTopicId!);
-
       } else {
         String errMsg = "Gagal vote";
         try {
@@ -157,7 +167,8 @@ class _VotingPageState extends State<VotingPage> {
               color: Colors.deepPurple.shade50,
               child: Row(
                 children: [
-                  const Text("Pilih Topik: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text("Pilih Topik: ",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButton<int>(
@@ -184,11 +195,17 @@ class _VotingPageState extends State<VotingPage> {
                 ],
               ),
             ),
+          if (selectedTopic?.isCivicPoll == true)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+              child: CivicPollContextCard(topic: selectedTopic!),
+            ),
           Expanded(
             child: isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : candidates.isEmpty
-                    ? const Center(child: Text("Tidak ada kandidat untuk topik ini."))
+                    ? const Center(
+                        child: Text("Tidak ada kandidat untuk topik ini."))
                     : ListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: candidates.length,
@@ -202,7 +219,8 @@ class _VotingPageState extends State<VotingPage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                               side: isMyVotedCandidate
-                                  ? const BorderSide(color: Colors.green, width: 2)
+                                  ? const BorderSide(
+                                      color: Colors.green, width: 2)
                                   : BorderSide.none,
                             ),
                             elevation: 4,
@@ -220,24 +238,39 @@ class _VotingPageState extends State<VotingPage> {
                                                 width: 65,
                                                 height: 65,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => Container(
+                                                errorBuilder: (_, __, ___) =>
+                                                    Container(
                                                   width: 65,
                                                   height: 65,
                                                   color: Colors.grey.shade300,
-                                                  child: const Icon(Icons.person, size: 35),
+                                                  child: Icon(
+                                                    selectedTopic
+                                                                ?.isCivicPoll ==
+                                                            true
+                                                        ? Icons.ballot_outlined
+                                                        : Icons.person,
+                                                    size: 35,
+                                                  ),
                                                 ),
                                               )
                                             : Container(
                                                 width: 65,
                                                 height: 65,
                                                 color: Colors.grey.shade300,
-                                                child: const Icon(Icons.person, size: 35),
+                                                child: Icon(
+                                                  selectedTopic?.isCivicPoll ==
+                                                          true
+                                                      ? Icons.ballot_outlined
+                                                      : Icons.person,
+                                                  size: 35,
+                                                ),
                                               ),
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               c.name,
@@ -248,8 +281,16 @@ class _VotingPageState extends State<VotingPage> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              c.bio.isNotEmpty ? c.bio : "Kandidat E-Voting",
-                                              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                              c.bio.isNotEmpty
+                                                  ? c.bio
+                                                  : (selectedTopic
+                                                              ?.isCivicPoll ==
+                                                          true
+                                                      ? "Opsi ${c.code}"
+                                                      : "Kandidat E-Voting"),
+                                              style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 13),
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -261,19 +302,29 @@ class _VotingPageState extends State<VotingPage> {
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: isMyVotedCandidate
                                               ? Colors.green
-                                              : (hasVotedTopic ? Colors.grey : Colors.deepPurple),
+                                              : (hasVotedTopic
+                                                  ? Colors.grey
+                                                  : Colors.deepPurple),
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                         ),
-                                        onPressed: (actionLoading || hasVotedTopic)
-                                            ? null
-                                            : () => voteCandidate(c),
+                                        onPressed:
+                                            (actionLoading || hasVotedTopic)
+                                                ? null
+                                                : () => voteCandidate(c),
                                         child: Text(
                                           isMyVotedCandidate
                                               ? "Pilihan Anda"
-                                              : (hasVotedTopic ? "Sudah Vote" : "Vote"),
+                                              : (hasVotedTopic
+                                                  ? "Sudah Memilih"
+                                                  : (selectedTopic
+                                                              ?.isCivicPoll ==
+                                                          true
+                                                      ? "Pilih"
+                                                      : "Vote")),
                                         ),
                                       ),
                                     ],
@@ -281,15 +332,24 @@ class _VotingPageState extends State<VotingPage> {
                                   const SizedBox(height: 12),
                                   // 📊 Progress Bar Survei Suara
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
-                                        "Keunggulan Suara:",
-                                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                                        selectedTopic?.isCivicPoll == true
+                                            ? "Hasil sementara:"
+                                            : "Keunggulan Suara:",
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[700]),
                                       ),
                                       Text(
                                         "${c.votePercentage}% (${c.voteCount} Suara)",
-                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.deepPurple),
                                       ),
                                     ],
                                   ),
@@ -297,11 +357,14 @@ class _VotingPageState extends State<VotingPage> {
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(4),
                                     child: LinearProgressIndicator(
-                                      value: (c.votePercentage / 100).clamp(0.0, 1.0),
+                                      value: (c.votePercentage / 100)
+                                          .clamp(0.0, 1.0),
                                       minHeight: 8,
                                       backgroundColor: Colors.grey.shade200,
                                       valueColor: AlwaysStoppedAnimation<Color>(
-                                        isMyVotedCandidate ? Colors.green : Colors.deepPurple,
+                                        isMyVotedCandidate
+                                            ? Colors.green
+                                            : Colors.deepPurple,
                                       ),
                                     ),
                                   ),
@@ -317,5 +380,3 @@ class _VotingPageState extends State<VotingPage> {
     );
   }
 }
-
-

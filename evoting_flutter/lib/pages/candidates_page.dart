@@ -2,13 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/candidate.dart';
+import '../models/topic.dart';
+import '../widgets/civic_poll_context_card.dart';
 import 'comments_page.dart';
 
 class CandidatesPage extends StatefulWidget {
-  final int topicId;
-  final String topicTitle;
+  final Topic topic;
 
-  const CandidatesPage({super.key, required this.topicId, required this.topicTitle});
+  const CandidatesPage({super.key, required this.topic});
 
   @override
   State<CandidatesPage> createState() => _CandidatesPageState();
@@ -31,7 +32,7 @@ class _CandidatesPageState extends State<CandidatesPage> {
   Future<void> fetchData() async {
     setState(() => isLoading = true);
     try {
-      final resCand = await api.get("candidates/?topic=${widget.topicId}");
+      final resCand = await api.get("candidates/?topic=${widget.topic.id}");
       if (resCand.statusCode == 200) {
         final data = jsonDecode(resCand.body) as List;
         candidates = data.map((e) => Candidate.fromJson(e)).toList();
@@ -46,7 +47,9 @@ class _CandidatesPageState extends State<CandidatesPage> {
         if (resVotes.statusCode == 200) {
           final List votes = jsonDecode(resVotes.body);
           final userTopicVote = votes.firstWhere(
-            (v) => (v['topic'] is int ? v['topic'] : v['topic']?['id']) == widget.topicId,
+            (v) =>
+                (v['topic'] is int ? v['topic'] : v['topic']?['id']) ==
+                widget.topic.id,
             orElse: () => null,
           );
           if (userTopicVote != null) {
@@ -76,14 +79,16 @@ class _CandidatesPageState extends State<CandidatesPage> {
     setState(() => actionLoading = true);
     try {
       final res = await api.post("votes/", {
-        "topic": widget.topicId,
+        "topic": widget.topic.id,
         "candidate": candidateId,
       });
 
       if (res.statusCode == 201) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vote berhasil! 🎉 Bukti voting telah dikirim ke WhatsApp Anda.")),
+          const SnackBar(
+              content: Text(
+                  "Vote berhasil! 🎉 Bukti voting telah dikirim ke WhatsApp Anda.")),
         );
 
         fetchData();
@@ -156,8 +161,8 @@ class _CandidatesPageState extends State<CandidatesPage> {
       context,
       MaterialPageRoute(
         builder: (_) => CommentsPage(
-          topicId: widget.topicId,
-          topicTitle: "${widget.topicTitle} - $candidateName",
+          topicId: widget.topic.id,
+          topicTitle: "${widget.topic.title} - $candidateName",
         ),
       ),
     );
@@ -167,7 +172,9 @@ class _CandidatesPageState extends State<CandidatesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Kandidat: ${widget.topicTitle}"),
+        title: Text(widget.topic.isCivicPoll
+            ? "Jajak Pendapat"
+            : "Kandidat: ${widget.topic.title}"),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -177,9 +184,15 @@ class _CandidatesPageState extends State<CandidatesPage> {
               ? const Center(child: Text("Belum ada kandidat pada topik ini."))
               : ListView.builder(
                   padding: const EdgeInsets.all(12),
-                  itemCount: candidates.length,
+                  itemCount:
+                      candidates.length + (widget.topic.isCivicPoll ? 1 : 0),
                   itemBuilder: (context, i) {
-                    final c = candidates[i];
+                    if (widget.topic.isCivicPoll && i == 0) {
+                      return CivicPollContextCard(topic: widget.topic);
+                    }
+                    final candidateIndex =
+                        i - (widget.topic.isCivicPoll ? 1 : 0);
+                    final c = candidates[candidateIndex];
                     final photoUrl = api.getImageUrl(c.photo);
                     final isMyVotedCandidate = (c.id == votedCandidateId);
 
@@ -206,13 +219,20 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                       ? NetworkImage(photoUrl)
                                       : null,
                                   child: photoUrl.isEmpty
-                                      ? const Icon(Icons.person, size: 35, color: Colors.deepPurple)
+                                      ? Icon(
+                                          widget.topic.isCivicPoll
+                                              ? Icons.ballot_outlined
+                                              : Icons.person,
+                                          size: 35,
+                                          color: Colors.deepPurple,
+                                        )
                                       : null,
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Row(
                                         children: [
@@ -227,10 +247,14 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                           ),
                                           if (isMyVotedCandidate)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: Colors.green.shade100,
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                               child: const Text(
                                                 "Voted ✓",
@@ -245,21 +269,38 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        c.bio.isNotEmpty ? c.bio : "Kandidat E-Voting Netizen",
-                                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                        c.bio.isNotEmpty
+                                            ? c.bio
+                                            : (widget.topic.isCivicPoll
+                                                ? "Opsi ${c.code}"
+                                                : "Kandidat E-Voting Netizen"),
+                                        style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 13),
                                       ),
                                       const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          Icon(Icons.thumb_up_alt_outlined, size: 16, color: Colors.green[700]),
-                                          const SizedBox(width: 4),
-                                          Text("${c.likes}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                          const SizedBox(width: 16),
-                                          Icon(Icons.thumb_down_alt_outlined, size: 16, color: Colors.red[700]),
-                                          const SizedBox(width: 4),
-                                          Text("${c.dislikes}", style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        ],
-                                      ),
+                                      if (!widget.topic.isCivicPoll)
+                                        Row(
+                                          children: [
+                                            Icon(Icons.thumb_up_alt_outlined,
+                                                size: 16,
+                                                color: Colors.green[700]),
+                                            const SizedBox(width: 4),
+                                            Text("${c.likes}",
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold)),
+                                            const SizedBox(width: 16),
+                                            Icon(Icons.thumb_down_alt_outlined,
+                                                size: 16,
+                                                color: Colors.red[700]),
+                                            const SizedBox(width: 4),
+                                            Text("${c.dislikes}",
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold)),
+                                          ],
+                                        ),
                                     ],
                                   ),
                                 ),
@@ -271,12 +312,20 @@ class _CandidatesPageState extends State<CandidatesPage> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  "Survei Keunggulan:",
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+                                  widget.topic.isCivicPoll
+                                      ? "Hasil sementara:"
+                                      : "Survei Keunggulan:",
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[700]),
                                 ),
                                 Text(
                                   "${c.votePercentage}% (${c.voteCount} Suara)",
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.deepPurple),
                                 ),
                               ],
                             ),
@@ -288,7 +337,9 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                 minHeight: 8,
                                 backgroundColor: Colors.grey.shade200,
                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                  isMyVotedCandidate ? Colors.green : Colors.deepPurple,
+                                  isMyVotedCandidate
+                                      ? Colors.green
+                                      : Colors.deepPurple,
                                 ),
                               ),
                             ),
@@ -298,23 +349,30 @@ class _CandidatesPageState extends State<CandidatesPage> {
                               children: [
                                 Row(
                                   children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.thumb_up),
-                                      color: Colors.green,
-                                      tooltip: "Like",
-                                      onPressed: actionLoading ? null : () => likeCandidate(c.id),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.thumb_down),
-                                      color: Colors.red,
-                                      tooltip: "Dislike",
-                                      onPressed: actionLoading ? null : () => dislikeCandidate(c.id),
-                                    ),
+                                    if (!widget.topic.isCivicPoll)
+                                      IconButton(
+                                        icon: const Icon(Icons.thumb_up),
+                                        color: Colors.green,
+                                        tooltip: "Like",
+                                        onPressed: actionLoading
+                                            ? null
+                                            : () => likeCandidate(c.id),
+                                      ),
+                                    if (!widget.topic.isCivicPoll)
+                                      IconButton(
+                                        icon: const Icon(Icons.thumb_down),
+                                        color: Colors.red,
+                                        tooltip: "Dislike",
+                                        onPressed: actionLoading
+                                            ? null
+                                            : () => dislikeCandidate(c.id),
+                                      ),
                                     IconButton(
                                       icon: const Icon(Icons.comment),
                                       color: Colors.blue,
                                       tooltip: "Komentar",
-                                      onPressed: () => openComments(c.id, c.name),
+                                      onPressed: () =>
+                                          openComments(c.id, c.name),
                                     ),
                                   ],
                                 ),
@@ -322,22 +380,32 @@ class _CandidatesPageState extends State<CandidatesPage> {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: isMyVotedCandidate
                                         ? Colors.green
-                                        : (hasVotedTopic ? Colors.grey : Colors.deepPurple),
+                                        : (hasVotedTopic
+                                            ? Colors.grey
+                                            : Colors.deepPurple),
                                     foregroundColor: Colors.white,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                   icon: Icon(
-                                    isMyVotedCandidate ? Icons.check_circle : Icons.how_to_vote,
+                                    isMyVotedCandidate
+                                        ? Icons.check_circle
+                                        : Icons.how_to_vote,
                                     size: 18,
                                   ),
                                   label: Text(
                                     isMyVotedCandidate
                                         ? "Pilihan Anda"
-                                        : (hasVotedTopic ? "Sudah Vote" : "Vote"),
+                                        : (hasVotedTopic
+                                            ? "Sudah Memilih"
+                                            : (widget.topic.isCivicPoll
+                                                ? "Pilih"
+                                                : "Vote")),
                                   ),
-                                  onPressed: (actionLoading || hasVotedTopic) ? null : () => voteCandidate(c.id),
+                                  onPressed: (actionLoading || hasVotedTopic)
+                                      ? null
+                                      : () => voteCandidate(c.id),
                                 ),
                               ],
                             ),
@@ -350,5 +418,3 @@ class _CandidatesPageState extends State<CandidatesPage> {
     );
   }
 }
-
-

@@ -59,25 +59,35 @@ class _TopicsPageState extends State<TopicsPage> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
                         leading: CircleAvatar(
                           backgroundColor: Colors.deepPurple.shade100,
-                          child: const Icon(Icons.how_to_vote, color: Colors.deepPurple),
+                          child: const Icon(Icons.how_to_vote,
+                              color: Colors.deepPurple),
                         ),
                         title: Text(
                           t.title,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         subtitle: Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text(t.description, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            t.isCivicPoll
+                                ? "Jajak pendapat publik · ${t.description}"
+                                : t.description,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.deepPurple),
+                        trailing: const Icon(Icons.arrow_forward_ios,
+                            size: 18, color: Colors.deepPurple),
                         onTap: () {
                           Navigator.pushNamed(
                             context,
                             '/candidates',
-                            arguments: {'topicId': t.id, 'topicTitle': t.title},
+                            arguments: {'topic': t},
                           );
                         },
                       ),
@@ -87,4 +97,3 @@ class _TopicsPageState extends State<TopicsPage> {
     );
   }
 }
-

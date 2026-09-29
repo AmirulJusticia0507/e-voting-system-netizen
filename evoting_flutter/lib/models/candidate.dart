@@ -1,6 +1,7 @@
 class Candidate {
   final int id;
   final int topicId;
+  final String code;
   final String name;
   final String photo;
   final String bio;
@@ -12,6 +13,7 @@ class Candidate {
   Candidate({
     required this.id,
     required this.topicId,
+    required this.code,
     required this.name,
     required this.photo,
     required this.bio,
@@ -23,7 +25,9 @@ class Candidate {
 
   factory Candidate.fromJson(Map<String, dynamic> json) => Candidate(
         id: json["id"],
-        topicId: json["topic"] is int ? json["topic"] : (json["topic"]?["id"] ?? 0),
+        topicId:
+            json["topic"] is int ? json["topic"] : (json["topic"]?["id"] ?? 0),
+        code: json["code"] ?? "",
         name: json["name"] ?? "",
         photo: json["photo"] ?? "",
         bio: json["bio"] ?? "",
@@ -33,4 +37,3 @@ class Candidate {
         votePercentage: (json['vote_percentage'] as num?)?.toDouble() ?? 0.0,
       );
 }
-
