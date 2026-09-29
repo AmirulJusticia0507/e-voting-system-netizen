@@ -220,6 +220,9 @@ VOTE_BROADCAST = os.getenv("VOTE_BROADCAST", "True") == "True"
 # Kosongkan agar memakai SECRET_KEY (hanya untuk development).
 RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
 
+# Shared secret untuk autentikasi payload internal dari Lex-DSS.
+LEX_DSS_HMAC_SECRET = os.getenv("LEX_DSS_HMAC_SECRET", "")
+
 # =============================================================================
 # 📱 Sharing / Public (V7-A)
 # BASE URL publik untuk membangun link share & QR yang bisa dibuka tanpa login.

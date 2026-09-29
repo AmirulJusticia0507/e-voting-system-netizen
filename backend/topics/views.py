@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from roles.permissions import ManageTopicsPermission
 
 from .models import Topic
+from .permissions import LexDSSImportPermission
 from .serializers import CivicPollImportSerializer, TopicSerializer
 
 
@@ -17,6 +18,8 @@ class TopicViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         # baca untuk siapa saja, tulis (create/update/delete) butuh manage_topics
+        if self.action == "import_civic_draft":
+            return [LexDSSImportPermission()]
         if self.request.method in SAFE_METHODS:
             return []
         return [ManageTopicsPermission()]

@@ -1,5 +1,10 @@
+import hashlib
+import hmac
+import json
+import time
+
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 from users.models import User
@@ -122,3 +127,50 @@ class CivicPollImportTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotIn(topic.id, [item["id"] for item in response.data])
+
+    @override_settings(LEX_DSS_HMAC_SECRET="shared-test-secret")
+    def test_lex_dss_can_import_with_valid_hmac_without_login(self):
+        client = APIClient()
+        payload = {
+            "schema_version": "1.0",
+            "event_id": "signed-001",
+            "generated_at": "2026-09-29T10:00:00+07:00",
+            "source": {"type": "document", "title": "Naskah kebijakan"},
+            "poll_draft": {
+                "question": "Apakah usulan disetujui?",
+                "options": [
+                    {"code": "A", "label": "Setuju"},
+                    {"code": "B", "label": "Tidak setuju"},
+                ],
+            },
+        }
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        timestamp = str(int(time.time()))
+        signature = hmac.new(
+            b"shared-test-secret",
+            timestamp.encode() + b"." + body,
+            hashlib.sha256,
+        ).hexdigest()
+
+        response = client.generic(
+            "POST",
+            "/api/topics/import-civic-draft/",
+            body,
+            content_type="application/json",
+            HTTP_X_LEX_TIMESTAMP=timestamp,
+            HTTP_X_LEX_SIGNATURE=f"sha256={signature}",
+        )
+
+        self.assertEqual(response.status_code, 201)
+
+    @override_settings(LEX_DSS_HMAC_SECRET="shared-test-secret")
+    def test_invalid_hmac_is_rejected(self):
+        response = APIClient().post(
+            "/api/topics/import-civic-draft/",
+            {},
+            format="json",
+            HTTP_X_LEX_TIMESTAMP=str(int(time.time())),
+            HTTP_X_LEX_SIGNATURE="sha256=invalid",
+        )
+
+        self.assertEqual(response.status_code, 401)
