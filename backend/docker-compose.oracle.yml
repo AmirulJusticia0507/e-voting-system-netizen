@@ -1,0 +1,59 @@
+# Stack produksi untuk Oracle Cloud Always Free (VM.Standard.A1.Flex, ARM64).
+#
+#   docker compose -f docker-compose.oracle.yml up -d --build
+#
+# Postgres memakai volume bernama sehingga data polling dan suara tidak hilang
+# saat container di-rebuild.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Tidak diekspos ke host. Hanya e-netizen yang perlu.database.
+    expose:
+      - "5432"
+
+  enetizen:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DEBUG: "0"
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY wajib diisi}
+      VOTE_ENCRYPTION_KEY: ${VOTE_ENCRYPTION_KEY:?VOTE_ENCRYPTION_KEY wajib diisi}
+      RESULT_SIGNING_KEY: ${RESULT_SIGNING_KEY:-}
+      LEX_DSS_HMAC_SECRET: ${LEX_DSS_HMAC_SECRET:?LEX_DSS_HMAC_SECRET wajib diisi}
+      # Host HTTP yang boleh memanggil import draf dan menarik agregat.
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      VOTE_BROADCAST: ${VOTE_BROADCAST:-True}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
+      WA_GATEWAY_URL: ${WA_GATEWAY_URL:-}
+      WA_GATEWAY_TOKEN: ${WA_GATEWAY_TOKEN:-}
+      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
+      REDIS_URL: ${REDIS_URL:-}
+    ports:
+      - "${ENETIZEN_PORT:-8000}:8000"
+
+volumes:
+  pgdata:

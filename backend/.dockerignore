@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.ruff_cache
+.mypy_cache
+*.sqlite3
+.env
+media/
+staticfiles/
+evoting_flutter/
+node_modules/
+*.log

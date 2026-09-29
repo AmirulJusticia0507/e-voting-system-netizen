@@ -143,6 +143,19 @@ CHANNEL_LAYERS = {
 
 ROOT_URLCONF = 'core.urls'
 
+# ── Keamanan transport ────────────────────────────────────────────────────
+# Nyalakan HANYA kalau TLS sudah terterminasi di depan aplikasi (reverse proxy
+# atau Cloudflare Tunnel). Kalau diaktifkan tanpa TLS, setiap request HTTP akan
+# dialihkan ke HTTPS dan tidak pernah sampai ke server.
+FORCE_HTTPS = os.getenv("FORCE_HTTPS", "0") == "1"
+SECURE_SSL_REDIRECT = FORCE_HTTPS
+SESSION_COOKIE_SECURE = FORCE_HTTPS
+CSRF_COOKIE_SECURE = FORCE_HTTPS
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if FORCE_HTTPS else None
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_HSTS_SECONDS > 0
+SECURE_HSTS_PRELOAD = SECURE_HSTS_SECONDS > 0
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
