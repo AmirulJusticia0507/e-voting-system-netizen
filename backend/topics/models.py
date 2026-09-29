@@ -37,6 +37,8 @@ class Topic(models.Model):
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
     published_at = models.DateTimeField(null=True, blank=True)
+    opens_at = models.DateTimeField(null=True, blank=True)
+    closes_at = models.DateTimeField(null=True, blank=True)
     election = models.ForeignKey(
         "election.ElectionPeriod",
         on_delete=models.SET_NULL,
