@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse, unquote
+
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -19,7 +21,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG") == "True"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+
+# Railway menyediakan nama host publik dan private sebagai variable otomatis.
+# Keduanya harus diizinkan supaya health check dan trafik antar-service lolos.
+_RAILWAY_PUBLIC_DOMAIN = os.getenv("RAILWAY_PUBLIC_DOMAIN")
+_RAILWAY_HOSTS = [
+    host for host in (_RAILWAY_PUBLIC_DOMAIN, os.getenv("RAILWAY_PRIVATE_DOMAIN")) if host
+]
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+] + _RAILWAY_HOSTS
+
+if DEBUG and not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Quick-start development settings - unsuitable for production
@@ -73,8 +91,15 @@ MIDDLEWARE = [
 AUTH_USER_MODEL = "users.User"
 
 
-# Untuk development, biar Flutter Web bisa request
-CORS_ALLOW_ALL_ORIGINS = True
+# Daftar origin diizinkan dibaca dari CORS_ALLOWED_ORIGINS (dipisah koma).
+# CORS_ALLOW_ALL_ORIGINS hanya untuk pengembangan; di produksi mencampur
+# "allow all" dengan kredensial akan ditolak django-cors-headers.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+CORS_ALLOW_ALL_ORIGINS = DEBUG and not CORS_ALLOWED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
     "content-type",
@@ -85,9 +110,6 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
-
-# Jangan lupa allowed hosts
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -107,12 +129,14 @@ REST_FRAMEWORK = {
 
 ASGI_APPLICATION = "core.asgi.application"
 
-# Channel layer config pakai Redis
+# Channel layer config pakai Redis. Railway meng-inject REDIS_URL; fallback
+# localhost hanya berlaku di pengembangan.
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379")
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [REDIS_URL],
         },
     },
 }
@@ -151,6 +175,27 @@ DATABASES = {
         'PORT': os.getenv("DB_PORT"),
     }
 }
+
+# Plugin PostgreSQL Railway hanya meng-inject satu DATABASE_URL, bukan DB_NAME/
+# DB_USER/DB_PASSWORD terpisah. railway.json sudah narrowing ke psycopg3.
+_database_url = os.getenv("DATABASE_URL")
+if _database_url:
+    _parsed = urlparse(_database_url)
+    DATABASES["default"].update(
+        {
+            "NAME": unquote((_parsed.path or "").lstrip("/")),
+            "USER": unquote(_parsed.username or ""),
+            "PASSWORD": unquote(_parsed.password or ""),
+            "HOST": _parsed.hostname or "",
+            "PORT": str(_parsed.port or 5432),
+        }
+    )
+
+if not DATABASES["default"]["NAME"]:
+    raise RuntimeError(
+        "Konfigurasi database kosong. Set DATABASE_URL (Railway) atau "
+        "DB_NAME/DB_USER/DB_PASSWORD/DB_HOST/DB_PORT."
+    )
 
 
 # Password validation
@@ -208,27 +253,46 @@ WA_GATEWAY_TOKEN = os.getenv("WA_GATEWAY_TOKEN", None)
 # Wajib diganti nilai aman di produksi (64+ karakter acak) lewat .env.
 # Dipakai AuthMiddleware untuk derive AES key & HMAC chain hash suara.
 # =============================================================================
-VOTE_ENCRYPTION_KEY = os.getenv(
-    "VOTE_ENCRYPTION_KEY",
-    "DEV_ONLY_CHANGE_ME_v1_5b41c9-3f7e-4a82-9c01-8d6e2f0a1b2c",
-)
+VOTE_ENCRYPTION_KEY = os.getenv("VOTE_ENCRYPTION_KEY", "")
+RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
+LEX_DSS_HMAC_SECRET = os.getenv("LEX_DSS_HMAC_SECRET", "")
+
+# Kunci integritas suara diturunkan dari VOTE_ENCRYPTION_KEY. Menjalankan produksi
+# dengan kunci dev berarti rantai hash suara bisa direproduksi siapa saja, jadi
+# lebih baik gagal start daripada diam-diam memakai kunci lemah.
+if not DEBUG:
+    _MISSING = [
+        name
+        for name, value in (
+            ("SECRET_KEY", SECRET_KEY),
+            ("VOTE_ENCRYPTION_KEY", VOTE_ENCRYPTION_KEY),
+        )
+        if not value
+    ]
+    if _MISSING:
+        raise RuntimeError(
+            "Environment variable produksi wajib diisi: " + ", ".join(_MISSING)
+        )
+    if len(VOTE_ENCRYPTION_KEY) < 32:
+        raise RuntimeError("VOTE_ENCRYPTION_KEY minimal 32 karakter di produksi.")
 
 # Aktifkan broadcast real-time (WebSocket) saat suara baru masuk.
-VOTE_BROADCAST = os.getenv("VOTE_BROADCAST", "True") == "True"
-
-# Kunci tanda tangan Ed25519 untuk Rekap Resmi (Ci.Cii).
-# Kosongkan agar memakai SECRET_KEY (hanya untuk development).
-RESULT_SIGNING_KEY = os.getenv("RESULT_SIGNING_KEY", "")
-
-# Shared secret untuk autentikasi payload internal dari Lex-DSS.
-LEX_DSS_HMAC_SECRET = os.getenv("LEX_DSS_HMAC_SECRET", "")
+# Nilai selain "True" (mis. "0", "false") berarti nonaktif, bukan aktif.
+VOTE_BROADCAST = os.getenv("VOTE_BROADCAST", "True").strip().lower() in {"true", "1", "yes", "on"}
 
 # =============================================================================
 # 📱 Sharing / Public (V7-A)
 # BASE URL publik untuk membangun link share & QR yang bisa dibuka tanpa login.
 # Di produksi ganti dengan domain publik (mis. https://evoting.example.id).
 # =============================================================================
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+# PUBLIC_BASE_URL dipakai untuk menyusun link share/QR, jadi harus berupa URL
+# lengkap ber-scheme. Railway hanya menyediakan hostname-nya, jadi disusun di sini.
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "").rstrip("/")
+if not PUBLIC_BASE_URL and _RAILWAY_PUBLIC_DOMAIN:
+    PUBLIC_BASE_URL = f"https://{_RAILWAY_PUBLIC_DOMAIN}"
+if not PUBLIC_BASE_URL:
+    PUBLIC_BASE_URL = "http://localhost:8000"
+
 
 # =============================================================================
 # 🔔 Push Notifications (FCM)
