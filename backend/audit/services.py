@@ -4,6 +4,7 @@ Setiap entri disimpan dengan ``integrity_hash`` = HMAC(prev, action, actor,
 target, detail, nonce). Bila satu entri diubah, rantai setelahnya rusak dan
 mudah terdeteksi lewat endpoint ``chain``.
 """
+
 import hashlib
 import hmac
 import json
@@ -25,7 +26,9 @@ def client_ip(request) -> str:
     return request.META.get("REMOTE_ADDR", "")
 
 
-def compute_hash(previous_hash, action, actor_id, target_type, target_pk, detail, nonce):
+def compute_hash(
+    previous_hash, action, actor_id, target_type, target_pk, detail, nonce
+):
     canonic = json.dumps(detail or {}, sort_keys=True, separators=(",", ":"))
     message = (
         f"{previous_hash}|{action}|{actor_id or ''}|{target_type}"
@@ -34,7 +37,9 @@ def compute_hash(previous_hash, action, actor_id, target_type, target_pk, detail
     return hmac.new(_key(), message.encode(), hashlib.sha256).hexdigest()
 
 
-def record(action, actor=None, target_type="", target_pk=None, request=None, detail=None):
+def record(
+    action, actor=None, target_type="", target_pk=None, request=None, detail=None
+):
     from .models import AuditLog
 
     last = AuditLog.objects.order_by("-id").first()
@@ -48,6 +53,7 @@ def record(action, actor=None, target_type="", target_pk=None, request=None, det
         target_type=target_type,
         target_pk=str(target_pk) if target_pk is not None else "",
         detail=detail,
+        nonce=nonce,
     )
 
     return AuditLog.objects.create(
@@ -56,9 +62,7 @@ def record(action, actor=None, target_type="", target_pk=None, request=None, det
         target_type=target_type,
         target_pk=str(target_pk) if target_pk is not None else "",
         ip_address=client_ip(request) if request else "",
-        user_agent=request.META.get(
-            "HTTP_USER_AGENT", ""
-        ) if request else "",
+        user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
         detail=detail,
         previous_hash=prev,
         integrity_hash=integrity,

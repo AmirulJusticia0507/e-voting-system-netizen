@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
+from audit.services import record
 from roles.permissions import ManageTopicsPermission
 
 from .models import Topic
@@ -54,6 +55,14 @@ class TopicViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK,
             )
         topic = serializer.save()
+        record(
+            "civic_poll.imported",
+            actor=request.user if request.user.is_authenticated else None,
+            target_type="topic",
+            target_pk=topic.id,
+            request=request,
+            detail={"event_id": topic.external_event_id},
+        )
         return Response(
             TopicSerializer(topic, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
@@ -67,6 +76,13 @@ class TopicViewSet(viewsets.ModelViewSet):
             return error
         topic.publication_status = Topic.PublicationStatus.IN_REVIEW
         topic.save(update_fields=["publication_status"])
+        record(
+            "civic_poll.review_submitted",
+            actor=request.user,
+            target_type="topic",
+            target_pk=topic.id,
+            request=request,
+        )
         return Response(TopicSerializer(topic, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
@@ -90,6 +106,13 @@ class TopicViewSet(viewsets.ModelViewSet):
                 "is_active",
             ]
         )
+        record(
+            "civic_poll.published",
+            actor=request.user,
+            target_type="topic",
+            target_pk=topic.id,
+            request=request,
+        )
         return Response(TopicSerializer(topic, context={"request": request}).data)
 
     @action(detail=True, methods=["post"])
@@ -101,6 +124,13 @@ class TopicViewSet(viewsets.ModelViewSet):
         topic.publication_status = Topic.PublicationStatus.CLOSED
         topic.is_active = False
         topic.save(update_fields=["publication_status", "is_active"])
+        record(
+            "civic_poll.closed",
+            actor=request.user,
+            target_type="topic",
+            target_pk=topic.id,
+            request=request,
+        )
         return Response(TopicSerializer(topic, context={"request": request}).data)
 
     @staticmethod

@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
+from audit.models import AuditLog
 from users.models import User
 
 from .models import CivicPollSource, Topic
@@ -118,6 +119,14 @@ class CivicPollImportTests(TestCase):
         self.assertEqual(topic.publication_status, Topic.PublicationStatus.CLOSED)
         self.assertEqual(topic.reviewed_by, self.admin)
         self.assertFalse(topic.is_active)
+        self.assertEqual(
+            list(AuditLog.objects.order_by("id").values_list("action", flat=True)),
+            [
+                "civic_poll.review_submitted",
+                "civic_poll.published",
+                "civic_poll.closed",
+            ],
+        )
 
     def test_public_list_hides_unpublished_civic_poll(self):
         topic = self.create_draft()
